@@ -1,5 +1,4 @@
 local resourceName = tostring(GetCurrentResourceName())
-local QBCore = exports['qb-core']:GetCoreObject()
 
 -- Impound locations - override in config if needed
 local ImpoundLocations = Config.ImpoundLocations or {
@@ -56,11 +55,11 @@ local function TakeOutImpound(data, garageIndex)
         return
     end
 
-    QBCore.Functions.SpawnVehicle(data.vehicle, function(veh)
+    Framework.SpawnVehicle(data.vehicle, function(veh)
         -- Try to get and apply stored vehicle properties
-        QBCore.Functions.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
+        Framework.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
             if properties then
-                QBCore.Functions.SetVehicleProperties(veh, properties)
+                Framework.SetVehicleProperties(veh, properties)
             end
             SetVehicleNumberPlateText(veh, data.plate)
             SetEntityHeading(veh, coords.w or 0.0)
@@ -78,7 +77,7 @@ local function TakeOutImpound(data, garageIndex)
 
             -- Give keys to owner
             pcall(function()
-                TriggerEvent('vehiclekeys:client:SetOwner', QBCore.Functions.GetPlate(veh))
+                TriggerEvent('vehiclekeys:client:SetOwner', Framework.GetPlate(veh))
             end)
 
             SetVehicleEngineOn(veh, true, true)

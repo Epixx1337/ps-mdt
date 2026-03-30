@@ -1,6 +1,4 @@
 local resourceName = tostring(GetCurrentResourceName())
-local ok, QBCore = pcall(function() return exports['qb-core']:GetCoreObject() end)
-if not ok then QBCore = nil end
 
 -- Send to Jail
 ps.registerCallback(resourceName .. ':server:sendToJail', function(source, payload)
@@ -25,7 +23,11 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
         return { success = false, message = 'Could not resolve player source' }
     end
 
-    local OtherPlayer = QBCore and QBCore.Functions.GetPlayer(targetSource)
+    if not Framework then
+        return { success = false, message = 'Core framework not available' }
+    end
+
+    local OtherPlayer = Framework.GetPlayer(targetSource)
     if not OtherPlayer then
         return { success = false, message = 'Could not find target player' }
     end
@@ -35,8 +37,8 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
         currentDate.day = 30
     end
 
-    OtherPlayer.Functions.SetMetaData('injail', sentence)
-    OtherPlayer.Functions.SetMetaData('criminalrecord', {
+    Framework.SetMetaData(targetSource, 'injail', sentence)
+    Framework.SetMetaData(targetSource, 'criminalrecord', {
         ['hasRecord'] = true,
         ['date'] = currentDate
     })

@@ -21,12 +21,14 @@ shared_scripts {
   '@ox_lib/init.lua'
 }
 
-client_script {
+client_scripts {
+  'bridge/client.lua',
   'client/**.lua'
 }
 
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
+  'bridge/server.lua',
   'server/**.lua'
 }
 

@@ -1,22 +1,3 @@
-local function getCoreObject()
-    local ok, core = pcall(function()
-        return exports['qb-core']:GetCoreObject()
-    end)
-    if ok and core then
-        return core
-    end
-
-    local okQbx, qbx = pcall(function()
-        return exports['qbx_core']:GetCoreObject()
-    end)
-    if okQbx and qbx then
-        return qbx
-    end
-
-    return nil
-end
-
-local Core = getCoreObject()
 local resourceName = tostring(GetCurrentResourceName())
 
 local function formatLabel(value)
@@ -32,10 +13,8 @@ local function formatLabel(value)
 end
 
 local function getVehicleShared(model)
-    if not Core or not Core.Shared or not Core.Shared.Vehicles then
-        return nil
-    end
-    return Core.Shared.Vehicles[model]
+    if not Framework then return nil end
+    return Framework.GetVehicleByModel(model)
 end
 
 local function buildVehicleFlags(stolen, hasActiveBolo, status)

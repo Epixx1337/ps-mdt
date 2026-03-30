@@ -540,13 +540,7 @@ ps.registerCallback(resourceName .. ':server:searchVehiclesForReport', function(
 
     local results = {}
     for _, row in ipairs(rows or {}) do
-        local vehicleData = nil
-        local ok, core = pcall(function()
-            return exports['qb-core']:GetCoreObject()
-        end)
-        if ok and core and core.Shared and core.Shared.Vehicles then
-            vehicleData = core.Shared.Vehicles[row.vehicle]
-        end
+        local vehicleData = Framework and Framework.GetVehicleByModel(row.vehicle) or nil
 
         table.insert(results, {
             plate = row.plate and string.upper(row.plate) or 'UNKNOWN',

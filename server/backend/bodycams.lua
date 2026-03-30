@@ -6,35 +6,23 @@ local function getBodycamConfig()
     return Config and Config.Bodycam or {}
 end
 
-local function shouldUseQbCore()
+local function shouldUseFramework()
     local cfg = getBodycamConfig()
     if cfg.DutyEventMode == 'pslib' then
         return false
     end
-    return exports[cfg.DutyResource] ~= nil
-end
-
-local function getQbCoreObject()
-    local cfg = getBodycamConfig()
-    local resource = exports[cfg.DutyResource]
-    if not resource then
-        return nil
-    end
-    return resource:GetCoreObject()
+    return Framework ~= nil
 end
 
 local function getOnDutyOfficers()
     local officers = {}
 
-    if shouldUseQbCore() then
-        local QBCore = getQbCoreObject()
-        if QBCore and QBCore.Functions and QBCore.Functions.GetQBPlayers then
-            local players = QBCore.Functions.GetQBPlayers() or {}
-            for _, player in pairs(players) do
-                local data = player.PlayerData
-                if data and data.job and data.job.onduty and IsPoliceJob(data.job.name, data.job.type) then
-                    officers[#officers + 1] = player
-                end
+    if shouldUseFramework() then
+        local players = Framework.GetAllPlayers()
+        for _, player in pairs(players) do
+            local data = player.PlayerData
+            if data and data.job and data.job.onduty and IsPoliceJob(data.job.name, data.job.type) then
+                officers[#officers + 1] = player
             end
         end
         return officers
@@ -115,11 +103,8 @@ ps.registerCallback(resourceName .. ':server:getBodycams', function(source)
         local isStillOnline = false
 
         local player = nil
-        if shouldUseQbCore() then
-            local QBCore = getQbCoreObject()
-            if QBCore and QBCore.Functions and QBCore.Functions.GetPlayer then
-                player = QBCore.Functions.GetPlayer(data.playerId)
-            end
+        if shouldUseFramework() then
+            player = Framework.GetPlayer(data.playerId)
         elseif ps and ps.getPlayer then
             player = ps.getPlayer(data.playerId)
         end
@@ -325,9 +310,8 @@ local function handleDutyChange(playerId, job, onDuty, employeeData)
             return
         end
 
-        if shouldUseQbCore() then
-            local QBCore = getQbCoreObject()
-            local Player = QBCore and QBCore.Functions and QBCore.Functions.GetPlayer and QBCore.Functions.GetPlayer(playerId) or nil
+        if shouldUseFramework() then
+            local Player = Framework.GetPlayer(playerId)
             if Player then
                 createOfficerBodycam(playerId, Player.PlayerData)
                 return
@@ -346,14 +330,20 @@ end
 
 local function registerDutyEvents()
     local cfg = getBodycamConfig()
+    local mode = cfg.DutyEventMode
 
-    if cfg.DutyEventMode == 'qbcore' then
+    -- Resolve 'auto' mode based on detected framework
+    if mode == 'auto' then
+        mode = Framework and 'qbcore' or 'pslib'
+    end
+
+    if mode == 'qbcore' then
         RegisterNetEvent(cfg.DutyEvent, function(source, job)
             local src = source
             if not src or not job then return end
             handleDutyChange(src, job, job.onduty == true, nil)
         end)
-    elseif cfg.DutyEventMode == 'pslib' then
+    elseif mode == 'pslib' then
         RegisterNetEvent(cfg.DutyEvent, function(playerId, jobName, onDuty, employeeData)
             if not playerId then return end
             handleDutyChange(playerId, { name = jobName }, onDuty == true, employeeData)
@@ -379,9 +369,8 @@ CreateThread(function()
         if police then
             for _, officer in pairs(police) do
                 if officer.citizenid then
-                    if shouldUseQbCore() then
-                        local QBCore = getQbCoreObject()
-                        local Player = QBCore and QBCore.Functions and QBCore.Functions.GetPlayerByCitizenId and QBCore.Functions.GetPlayerByCitizenId(officer.citizenid) or nil
+                    if shouldUseFramework() then
+                        local Player = Framework.GetPlayerByCitizenId(officer.citizenid)
                         if Player and Player.PlayerData.job and Player.PlayerData.job.onduty then
                             createOfficerBodycam(Player.PlayerData.source, Player.PlayerData)
                         end
@@ -394,9 +383,8 @@ CreateThread(function()
                 end
             end
         end
-    elseif shouldUseQbCore() then
-        local QBCore = getQbCoreObject()
-        local players = QBCore and QBCore.Functions and QBCore.Functions.GetQBPlayers and QBCore.Functions.GetQBPlayers() or {}
+    elseif shouldUseFramework() then
+        local players = Framework.GetAllPlayers()
 
         for _, player in pairs(players or {}) do
             local playerData = player.PlayerData

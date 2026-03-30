@@ -80,8 +80,6 @@ local class = {
     weapon_compactlauncher       ={type = 'heavy', class  = 7},
     weapon_rayminigun            ={type = 'heavy', class  = 7},
 }
-local okQB, QBCore = pcall(function() return exports['qb-core']:GetCoreObject() end)
-if not okQB then QBCore = nil end
 local function registerWeapon(citizenid, weaponName, serial, info)
     -- Ensure profile exists so owner name can be resolved later
     if citizenid and citizenid ~= '' then
@@ -138,7 +136,7 @@ ps.registerCallback('ps-mdt:server:getWeapons', function(source)
             information = v.information,
             weaponClass = v.weaponClass,
             weaponModel = v.weaponModel,
-            name = (QBCore and QBCore.Shared and QBCore.Shared.Weapons and QBCore.Shared.Weapons[GetHashKey(v.weaponModel)] and QBCore.Shared.Weapons[GetHashKey(v.weaponModel)].label) or v.weaponModel,
+            name = (Framework and Framework.GetWeaponByHash(GetHashKey(v.weaponModel)) and Framework.GetWeaponByHash(GetHashKey(v.weaponModel)).label) or v.weaponModel,
             image = 'https://docs.fivem.net/weapons/' .. v.weaponModel:upper() .. '.png',
             type = class[modelLower] and class[modelLower].type or 'unknown',
         }
@@ -253,8 +251,8 @@ end)
 -- Scan player inventory for weapons (for self-register)
 ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
     local src = source
-    if not QBCore then return {} end
-    local Player = QBCore.Functions.GetPlayer(src)
+    if not Framework then return {} end
+    local Player = Framework.GetPlayer(src)
     if not Player then return {} end
 
     local weaponInfos = {}
@@ -270,7 +268,7 @@ ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
                     weaponInfos[#weaponInfos + 1] = {
                         serialnumber = item.metadata and item.metadata.serial or 'Unknown',
                         owner = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                        weaponmodel = (QBCore.Shared.Items[string.lower(item.name)] and QBCore.Shared.Items[string.lower(item.name)].label) or item.name,
+                        weaponmodel = (Framework and Framework.GetSharedItems()[string.lower(item.name)] and Framework.GetSharedItems()[string.lower(item.name)].label) or item.name,
                         weaponurl = invImage,
                         notes = 'Self Registered',
                         weapClass = 1,
@@ -285,7 +283,7 @@ ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
                     weaponInfos[#weaponInfos + 1] = {
                         serialnumber = item.info and item.info.serie or 'Unknown',
                         owner = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                        weaponmodel = (QBCore.Shared.Items[item.name] and QBCore.Shared.Items[item.name].label) or item.name,
+                        weaponmodel = (Framework and Framework.GetSharedItems()[item.name] and Framework.GetSharedItems()[item.name].label) or item.name,
                         weaponurl = item.image or '',
                         notes = 'Self Registered',
                         weapClass = 1,
@@ -308,8 +306,8 @@ CreateThread(function()
     exports.ox_inventory:registerHook('buyItem', function(payload)
         if not payload.itemName or not string.find(payload.itemName, 'WEAPON_') then return true end
         CreateThread(function()
-            if not QBCore then return end
-            local Player = QBCore.Functions.GetPlayer(payload.source)
+            if not Framework then return end
+            local Player = Framework.GetPlayer(payload.source)
             if not Player then return end
             local owner = Player.PlayerData.citizenid
             if not owner or not payload.metadata or not payload.metadata.serial then return end
@@ -330,8 +328,8 @@ CreateThread(function()
         exports.ox_inventory:registerHook('createItem', function(payload)
             if not payload.item or not payload.item.name or not string.find(payload.item.name, 'WEAPON_') then return true end
             CreateThread(function()
-                if not QBCore then return end
-                local Player = QBCore.Functions.GetPlayer(payload.inventoryId)
+                if not Framework then return end
+                local Player = Framework.GetPlayer(payload.inventoryId)
                 if not Player then return end
                 local owner = Player.PlayerData.citizenid
                 if not owner or not payload.metadata or not payload.metadata.serial then return end
@@ -415,8 +413,8 @@ do
     -- Clean up tracking when player drops
     AddEventHandler('playerDropped', function()
         local src = source
-        if not QBCore then return end
-        local Player = QBCore.Functions.GetPlayer(src)
+        if not Framework then return end
+        local Player = Framework.GetPlayer(src)
         if Player and Player.PlayerData and Player.PlayerData.citizenid then
             knownSerials[Player.PlayerData.citizenid] = nil
         end

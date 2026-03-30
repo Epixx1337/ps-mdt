@@ -26,15 +26,15 @@ local function getCertifications(citizenid)
     return {}
 end
 
-local function buildRosterFromQbx()
+local function buildRosterFromFramework()
     local rosterList = {}
     local activeUnits = {}
     local members = {}
     local policeJobs = (Config and Config.PoliceJobs) or { 'police' }
-    local qbx = exports['qbx_core']
 
+    -- Use GetGroupMembers if available (QBox)
     for _, jobName in ipairs(policeJobs) do
-        local groupMembers = qbx:GetGroupMembers(jobName, 'job') or {}
+        local groupMembers = Framework.GetGroupMembers(jobName, 'job') or {}
         for _, member in ipairs(groupMembers) do
             if member.citizenid then
                 members[member.citizenid] = true
@@ -42,7 +42,7 @@ local function buildRosterFromQbx()
         end
     end
 
-    for _, player in ipairs(qbx:GetQBPlayers() or {}) do
+    for _, player in ipairs(Framework.GetAllPlayers()) do
         local data = player.PlayerData or nil
         if data and data.job then
             local job = data.job
@@ -60,8 +60,8 @@ local function buildRosterFromQbx()
     end
 
     for citizenid, _ in pairs(members) do
-        local onlinePlayer = qbx:GetPlayerByCitizenId(citizenid)
-        local player = onlinePlayer or qbx:GetOfflinePlayer(citizenid)
+        local onlinePlayer = Framework.GetPlayerByCitizenId(citizenid)
+        local player = onlinePlayer or Framework.GetOfflinePlayer(citizenid)
         if player and player.PlayerData then
             local data = player.PlayerData
             local job = data.job or {}
@@ -118,8 +118,8 @@ local function checkDuty(citizenid)
 end
 
 ps.registerCallback('ps-mdt:server:getRosterList', function(source)
-    if GetResourceState('qbx_core') == 'started' and exports['qbx_core'] then
-        return buildRosterFromQbx()
+    if Framework and Framework.isQBX then
+        return buildRosterFromFramework()
     end
 
     local rosterList = {}
@@ -372,17 +372,16 @@ ps.registerCallback('ps-mdt:server:updateOfficerCallsign', function(source, payl
     end
 
     -- Use the existing setCallsign callback logic
-    local ok, QBCore = pcall(function() return exports['qb-core']:GetCoreObject() end)
-    if not ok or not QBCore then
+    if not Framework then
         return { success = false, message = 'Core framework not available' }
     end
 
-    local Player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
+    local Player = Framework.GetPlayerByCitizenId(citizenid)
     if not Player then
         return { success = false, message = 'Officer must be online to update callsign' }
     end
 
-    Player.Functions.SetMetaData('callsign', newCallsign)
+    Framework.SetMetaData(Player.PlayerData.source, 'callsign', newCallsign)
 
     local resourceName = GetCurrentResourceName()
     TriggerClientEvent(resourceName .. ':client:updateCallsign', Player.PlayerData.source, newCallsign)

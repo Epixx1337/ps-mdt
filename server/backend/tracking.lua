@@ -3,9 +3,8 @@ local resourceName = tostring(GetCurrentResourceName())
 local function getOfficerTrackers()
     local officers = {}
 
-    if exports['qb-core'] then
-        local QBCore = exports['qb-core']:GetCoreObject()
-        local players = QBCore.Functions.GetQBPlayers() or {}
+    if Framework then
+        local players = Framework.GetAllPlayers()
         for _, player in pairs(players) do
             local data = player.PlayerData
             if data and data.job and data.job.onduty then
@@ -64,9 +63,8 @@ local function getVehicleTrackers()
     local vehicles = {}
     local seen = {}
 
-    if exports['qb-core'] then
-        local QBCore = exports['qb-core']:GetCoreObject()
-        local players = QBCore.Functions.GetQBPlayers() or {}
+    if Framework then
+        local players = Framework.GetAllPlayers()
         for _, player in pairs(players) do
             local data = player.PlayerData
             if data and data.job and data.job.onduty and IsPoliceJob(data.job.name, data.job.type) then
@@ -96,9 +94,8 @@ end
 local function getBodycamTrackers()
     local bodycams = {}
 
-    if exports['qb-core'] then
-        local QBCore = exports['qb-core']:GetCoreObject()
-        local players = QBCore.Functions.GetQBPlayers() or {}
+    if Framework then
+        local players = Framework.GetAllPlayers()
         for _, player in pairs(players) do
             local data = player.PlayerData
             if data and data.job and data.job.onduty then

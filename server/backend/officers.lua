@@ -1,6 +1,4 @@
 local resourceName = tostring(GetCurrentResourceName())
-local ok, QBCore = pcall(function() return exports['qb-core']:GetCoreObject() end)
-if not ok then QBCore = nil end
 
 -- Get player source ID by citizenId
 ps.registerCallback(resourceName .. ':server:GetPlayerSourceId', function(source, targetCitizenId)
@@ -26,10 +24,10 @@ ps.registerCallback(resourceName .. ':server:setCallsign', function(source, payl
         return { success = false, message = 'Missing citizen ID or callsign' }
     end
 
-    if not QBCore then return { success = false, message = 'Core framework not available' } end
-    local Player = QBCore.Functions.GetPlayerByCitizenId(cid)
+    if not Framework then return { success = false, message = 'Core framework not available' } end
+    local Player = Framework.GetPlayerByCitizenId(cid)
     if Player then
-        Player.Functions.SetMetaData('callsign', newCallsign)
+        Framework.SetMetaData(Player.PlayerData.source, 'callsign', newCallsign)
         TriggerClientEvent(resourceName .. ':client:updateCallsign', Player.PlayerData.source, newCallsign)
 
         MySQL.update.await('UPDATE mdt_profiles SET callsign = ? WHERE citizenid = ?', { newCallsign, cid })
@@ -57,15 +55,15 @@ ps.registerCallback(resourceName .. ':server:setRadio', function(source, payload
         return { success = false, message = 'Missing citizen ID or radio frequency' }
     end
 
-    if not QBCore then return { success = false, message = 'Core framework not available' } end
-    local targetPlayer = QBCore.Functions.GetPlayerByCitizenId(cid)
+    if not Framework then return { success = false, message = 'Core framework not available' } end
+    local targetPlayer = Framework.GetPlayerByCitizenId(cid)
     if not targetPlayer then
         return { success = false, message = 'Officer must be online' }
     end
 
     local targetSource = targetPlayer.PlayerData.source
 
-    local radio = targetPlayer.Functions.GetItemByName('radio')
+    local radio = Framework.GetItemByName(targetPlayer, 'radio')
     if not radio then
         return { success = false, message = targetPlayer.PlayerData.charinfo.firstname .. ' does not have a radio!' }
     end
@@ -79,8 +77,8 @@ ps.registerCallback(resourceName .. ':server:getUnitLocation', function(source, 
     if not CheckAuth(source) then return {} end
     if not cid then return {} end
 
-    if not QBCore then return {} end
-    local Player = QBCore.Functions.GetPlayerByCitizenId(cid)
+    if not Framework then return {} end
+    local Player = Framework.GetPlayerByCitizenId(cid)
     if Player then
         local coords = GetEntityCoords(GetPlayerPed(Player.PlayerData.source))
         return { x = coords.x, y = coords.y, z = coords.z }

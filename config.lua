@@ -265,9 +265,9 @@ Config.ManagementPermissions = {
 -- Bodycam Settings (override defaults if needed, remove to use built-in defaults)
 Config.Bodycam = {
     DutyEvent = 'QBCore:Server:OnJobUpdate',
-    DutyEventMode = 'qbcore',
+    DutyEventMode = 'auto',  -- 'auto' | 'qbcore' | 'pslib' (auto detects qb-core or qbx_core)
     MultiJobDutyEvent = 'ps-multijob:server:dutyChanged',
-    DutyResource = 'qb-core',
+    DutyResource = 'auto',   -- 'auto' | 'qb-core' | 'qbx_core' (auto detects which framework is running)
     MultiJobResource = 'ps-multijob',
 }
 
