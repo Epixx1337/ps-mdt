@@ -56,8 +56,8 @@ local function TakeOutImpound(data, garageIndex)
     end
 
     Framework.SpawnVehicle(data.vehicle, function(veh)
-        -- Try to get and apply stored vehicle properties
-        Framework.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
+        -- Apply stored vehicle properties
+        local function applyAndFinish(properties)
             if properties then
                 Framework.SetVehicleProperties(veh, properties)
             end
@@ -81,7 +81,17 @@ local function TakeOutImpound(data, garageIndex)
             end)
 
             SetVehicleEngineOn(veh, true, true)
-        end, data.plate)
+        end
+
+        if data.props then
+            -- Properties included from server (works for both QBCore and QBox)
+            applyAndFinish(data.props)
+        else
+            -- Fallback: fetch from garage callback (legacy support)
+            Framework.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
+                applyAndFinish(properties)
+            end, data.plate)
+        end
     end, coords, true)
 end
 

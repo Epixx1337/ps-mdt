@@ -69,7 +69,7 @@ ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, p
     end
 
     -- Get full vehicle data before releasing (for spawning)
-    local fullVehicle = MySQL.single.await('SELECT id, vehicle, fuel, engine, body, plate FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
+    local fullVehicle = MySQL.single.await('SELECT id, vehicle, fuel, engine, body, plate, mods FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
 
     -- Set vehicle state back to garaged (state = 1)
     MySQL.update.await('UPDATE player_vehicles SET state = 1 WHERE plate = ?', { plate })
@@ -79,6 +79,14 @@ ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, p
 
     -- Trigger client-side vehicle spawn at impound location
     if fullVehicle then
+        local vehicleProps = nil
+        if fullVehicle.mods and fullVehicle.mods ~= '' then
+            local ok, decoded = pcall(json.decode, fullVehicle.mods)
+            if ok and decoded then
+                vehicleProps = decoded
+            end
+        end
+
         local spawnData = {
             vehicle = fullVehicle.vehicle,
             plate = fullVehicle.plate,
@@ -86,6 +94,7 @@ ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, p
             engine = fullVehicle.engine or 1000.0,
             body = fullVehicle.body or 1000.0,
             currentSelection = tonumber(payload.impoundLocation) or 1,
+            props = vehicleProps,
         }
         TriggerClientEvent(resourceName .. ':client:TakeOutImpound', src, spawnData)
     end
