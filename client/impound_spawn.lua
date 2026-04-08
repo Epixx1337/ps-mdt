@@ -65,12 +65,24 @@ local function TakeOutImpound(data, garageIndex)
             SetEntityHeading(veh, coords.w or 0.0)
 
             -- Set fuel
-            local fuelExport = Config.Fuel or 'LegacyFuel'
-            if GetResourceState(fuelExport) == 'started' then
-                pcall(function()
-                    exports[fuelExport]:SetFuel(veh, data.fuel or 100.0)
-                end)
+            local fuelLevel = data.fuel or 100.0
+            local fuelResource = Config.Fuel or 'auto'
+            if fuelResource == 'auto' then
+                if GetResourceState('ox_fuel') == 'started' then
+                    fuelResource = 'ox_fuel'
+                elseif GetResourceState('ps-fuel') == 'started' then
+                    fuelResource = 'ps-fuel'
+                elseif GetResourceState('LegacyFuel') == 'started' then
+                    fuelResource = 'LegacyFuel'
+                end
             end
+            pcall(function()
+                if fuelResource == 'ox_fuel' then
+                    Entity(veh).state.fuel = fuelLevel
+                elseif fuelResource and GetResourceState(fuelResource) == 'started' then
+                    exports[fuelResource]:SetFuel(veh, fuelLevel)
+                end
+            end)
 
             -- Apply damage
             doCarDamage(veh, data)

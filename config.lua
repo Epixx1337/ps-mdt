@@ -112,7 +112,7 @@ Config.Housing = 'auto' -- 'auto' | 'ps-housing' | 'nolag_properties' (auto dete
 Config.Jail = 'auto' -- 'auto' | 'qb-prison' | 'xt-prison' (auto detects which is running)
 
 -- Fuel Resource Name
-Config.Fuel = 'LegacyFuel' -- Fuel resource name for vehicle fuel management
+Config.Fuel = 'auto' -- 'auto' | 'ox_fuel' | 'LegacyFuel' | 'ps-fuel' | any resource name (auto detects which is running)
 
 -- Weapon Registration
 Config.RegisterWeaponsAutomatically = true -- Auto-register weapons on purchase (ox_inventory and qb-inventory/qb-weapons)
