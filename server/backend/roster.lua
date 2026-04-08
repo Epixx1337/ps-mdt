@@ -118,8 +118,9 @@ local function buildRosterFromFramework(jobList, targetJobType)
             local job = data.job or {}
             local callsign = data.metadata and data.metadata.callsign or 'N/A'
             local fullname = data.charinfo and (data.charinfo.firstname .. ' ' .. data.charinfo.lastname) or 'Unknown'
-            local rank = job.grade and job.grade.name or 'Officer'
-            local department = job.name or 'police'
+            local defaultRank = Config.DepartmentLabels and Config.DepartmentLabels[targetJobType] and Config.DepartmentLabels[targetJobType].singular or 'Officer'
+            local rank = job.grade and job.grade.name or defaultRank
+            local department = job.name or 'unknown'
             local certifications = getCertifications(citizenid, targetJobType)
 
             local onlineSrc = onlinePlayer and (onlinePlayer.PlayerData and onlinePlayer.PlayerData.source or onlinePlayer.source) or nil
@@ -206,7 +207,8 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
             local callsign = metadata.callsign or 'N/A'
             local firstName = charinfo.firstname or 'N/A'
             local lastName = charinfo.lastname or 'N/A'
-            local rank = job.grade and job.grade.name or employee.grade and ps.getSharedJobGradeData(jobName or 'police', employee.grade, 'name') or 'Officer'
+            local deptDefaultRank = Config.DepartmentLabels and Config.DepartmentLabels[targetJobType] and Config.DepartmentLabels[targetJobType].singular or 'Officer'
+            local rank = job.grade and job.grade.name or employee.grade and ps.getSharedJobGradeData(jobName or 'unknown', employee.grade, 'name') or deptDefaultRank
             local status = checkDuty(citizenid, jobList, targetJobType)
             local onlinePlayer = ps.getPlayerByIdentifier(citizenid)
             local onlineSrc = onlinePlayer and (onlinePlayer.source or (onlinePlayer.PlayerData and onlinePlayer.PlayerData.source)) or nil

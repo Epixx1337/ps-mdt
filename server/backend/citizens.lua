@@ -16,7 +16,7 @@ local function getPropertyCounts(citizenids, inClause)
     local propRows
     if housingType == 'nolag_properties' then
         propRows = MySQL.query.await(
-            ('SELECT po.identifier, COUNT(*) AS cnt FROM properties p JOIN property_owners po ON p.ownerid = po.id WHERE po.identifier IN (%s) GROUP BY po.identifier'):format(inClause),
+            ('SELECT po.identifier, COUNT(*) AS cnt FROM properties p JOIN properties_owners po ON p.ownerid = po.id WHERE po.identifier IN (%s) GROUP BY po.identifier'):format(inClause),
             citizenids
         ) or {}
         for _, row in ipairs(propRows) do
@@ -37,7 +37,7 @@ end
 --- Get property list for a single citizen (used in citizen detail view)
 local function getPropertyList(citizenid)
     if housingType == 'nolag_properties' then
-        return MySQL.query.await('SELECT p.label AS house FROM properties p JOIN property_owners po ON p.ownerid = po.id WHERE po.identifier = ?', { citizenid }) or {}
+        return MySQL.query.await('SELECT p.label AS house FROM properties p JOIN properties_owners po ON p.ownerid = po.id WHERE po.identifier = ?', { citizenid }) or {}
     else
         return MySQL.query.await('SELECT house FROM player_houses WHERE citizenid = ?', { citizenid }) or {}
     end
