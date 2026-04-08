@@ -204,7 +204,7 @@
 		{:else if activeComponent === "roster"}
 			<Roster {authService} {tabService} />
 		{:else if activeComponent === "map"}
-			<Map />
+			<Map jobType={authService.jobType} />
 		{:else if activeComponent === "vehicles"}
 			<Vehicles {tabService} />
 		{:else if activeComponent === "weapons"}
@@ -216,7 +216,7 @@
 		{:else if activeComponent === "cameras"}
 			<Cameras />
 		{:else if activeComponent === "bodycams"}
-			<Bodycams />
+			<Bodycams jobType={authService.jobType} />
 		{:else if activeComponent === "ia"}
 			<IA {tabService} {authService} />
 		{:else if activeComponent === "ppr"}

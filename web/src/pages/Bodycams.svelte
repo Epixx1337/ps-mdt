@@ -4,6 +4,10 @@
 	import { isEnvBrowser } from "../utils/misc";
 	import { NUI_EVENTS } from "../constants/nuiEvents";
 	import { globalNotifications } from "../services/notificationService.svelte";
+	import type { JobType } from "../interfaces/IUser";
+
+	let { jobType = 'leo' }: { jobType?: JobType } = $props();
+	let memberLabel = $derived(jobType === 'ems' ? 'Medic' : jobType === 'doj' ? 'Member' : 'Officer');
 
 	let bodycams = $state<Bodycam[]>([]);
 	let isLoading = $state(false);
@@ -144,7 +148,7 @@
 	<div class="list-panel">
 		<div class="table-header">
 			<span class="col-callsign">Callsign</span>
-			<span class="col-name">Officer</span>
+			<span class="col-name">{memberLabel}</span>
 			<span class="col-rank">Rank</span>
 			<span class="col-status">Status</span>
 			<span class="col-viewers">Viewers</span>

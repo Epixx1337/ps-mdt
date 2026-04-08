@@ -94,7 +94,7 @@
 			<span class="metadata-value">{reportId}</span>
 		</div>
 		<div class="metadata-item">
-			<span class="metadata-label">Officer</span>
+			<span class="metadata-label">{jobType === 'ems' ? 'Medic' : jobType === 'doj' ? 'Author' : 'Officer'}</span>
 			<span class="metadata-value officer-value">
 				{#if officer.startsWith('NO CALLSIGN')}
 					<span class="officer-badge no-callsign">NO CALLSIGN</span>

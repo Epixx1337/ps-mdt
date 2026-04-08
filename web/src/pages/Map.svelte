@@ -12,6 +12,11 @@
 	import { isEnvBrowser } from "../utils/misc";
 	import { NUI_EVENTS } from "../constants/nuiEvents";
 	import { globalNotifications } from "../services/notificationService.svelte";
+	import type { JobType } from "../interfaces/IUser";
+
+	let { jobType = 'leo' }: { jobType?: JobType } = $props();
+	let memberLabelPlural = $derived(jobType === 'ems' ? 'Medics' : jobType === 'doj' ? 'Members' : 'Officers');
+	let memberLabel = $derived(jobType === 'ems' ? 'Medic' : jobType === 'doj' ? 'Member' : 'Officer');
 
 	let mapContainer: HTMLDivElement | null = null;
 	let map: L.Map | null = null;
@@ -258,7 +263,7 @@
 			<div class="controls-group">
 				<label class="control-toggle">
 					<input type="checkbox" bind:checked={showOfficers} />
-					<span class="toggle-label">Officers</span>
+					<span class="toggle-label">{memberLabelPlural}</span>
 				</label>
 				<label class="control-toggle">
 					<input type="checkbox" bind:checked={showVehicles} />
@@ -295,7 +300,7 @@
 			<div class="controls-divider"></div>
 
 			<div class="legend">
-				<span class="legend-item officer">Officer</span>
+				<span class="legend-item officer">{memberLabel}</span>
 				<span class="legend-item vehicle">Vehicle</span>
 				<span class="legend-item bodycam">Bodycam</span>
 			</div>
