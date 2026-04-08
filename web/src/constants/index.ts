@@ -114,7 +114,7 @@ export const DOJ_REPORT_TYPES = [
 	"Sentencing Report",
 ] as const;
 
-export function getReportTypesForJob(jobType: 'leo' | 'ems' | 'doj'): readonly string[] {
+export function getReportTypesForJob(jobType: string): readonly string[] {
 	if (jobType === 'ems') return EMS_REPORT_TYPES;
 	if (jobType === 'doj') return DOJ_REPORT_TYPES;
 	return LEO_REPORT_TYPES;
