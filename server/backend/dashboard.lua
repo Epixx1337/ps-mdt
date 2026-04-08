@@ -16,8 +16,10 @@ end
 ps.registerCallback(resourceName .. ':server:getJobData', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
+    local jobType = ps.getJobType(src) or 'leo'
+    local defaultRank = Config.DepartmentLabels and Config.DepartmentLabels[jobType] and Config.DepartmentLabels[jobType].singular or 'Officer'
     local response = {
-        rank = ps.getJobGradeName(src) or "Officer",
+        rank = ps.getJobGradeName(src) or defaultRank,
         payRate = "$" .. (ps.getJobGradePay(src) or 300) .. "/hr",
     }
     return response
@@ -26,14 +28,20 @@ end)
 ps.registerCallback(resourceName .. ':server:getReportStatistics', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
+    local playerJobType = getEffectiveJobType(src) or 'leo'
 
-    return Cache.getOrSet('dashboard:reportStats', Config.CacheTTL and Config.CacheTTL.ReportStats or 30, function()
+    return Cache.getOrSet('dashboard:reportStats:' .. playerJobType, Config.CacheTTL and Config.CacheTTL.ReportStats or 30, function()
         local response = MySQL.query.await([[
             SELECT
-                COUNT(CASE WHEN datecreated >= NOW() - INTERVAL 1 WEEK THEN 1 END) AS totalThisWeek,
-                COUNT(CASE WHEN datecreated >= NOW() - INTERVAL 2 WEEK AND datecreated < NOW() - INTERVAL 1 WEEK THEN 1 END) AS totalLastWeek
-            FROM mdt_reports
-        ]], {})
+                COUNT(CASE WHEN mr.datecreated >= NOW() - INTERVAL 1 WEEK THEN 1 END) AS totalThisWeek,
+                COUNT(CASE WHEN mr.datecreated >= NOW() - INTERVAL 2 WEEK AND mr.datecreated < NOW() - INTERVAL 1 WEEK THEN 1 END) AS totalLastWeek
+            FROM mdt_reports mr
+            LEFT JOIN mdt_reports_restrictions mrr ON mr.id = mrr.reportid
+            WHERE (
+                mrr.reportid IS NULL
+                OR (mrr.type = 'jobtype' AND mrr.identifier = ?)
+            )
+        ]], { playerJobType })
 
         local row = response and response[1] or { totalThisWeek = 0, totalLastWeek = 0 }
         local reportStatistics = {
