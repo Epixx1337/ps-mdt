@@ -108,6 +108,9 @@ Config.FingerprintScan = {
 -- Housing Resource
 Config.Housing = 'auto' -- 'auto' | 'ps-housing' | 'nolag_properties' (auto detects which is running)
 
+-- Jail Resource
+Config.Jail = 'auto' -- 'auto' | 'qb-prison' | 'xt-prison' (auto detects which is running)
+
 -- Fuel Resource Name
 Config.Fuel = 'LegacyFuel' -- Fuel resource name for vehicle fuel management
 

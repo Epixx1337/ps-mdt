@@ -1,5 +1,48 @@
 local resourceName = tostring(GetCurrentResourceName())
 
+-- Detect jail resource
+local jailType = Config.Jail or 'auto'
+if jailType == 'auto' then
+    if GetResourceState('xt-prison') == 'started' then
+        jailType = 'xt-prison'
+    else
+        jailType = 'qb-prison'
+    end
+end
+
+local function sendPlayerToJail(src, targetSource, citizenId, sentence)
+    if jailType == 'xt-prison' then
+        local sent = lib.callback.await('xt-prison:client:enterJail', targetSource, sentence)
+        if not sent then
+            return false, 'xt-prison failed to jail player'
+        end
+        return true
+    end
+
+    -- Default: qb-prison / standard QBCore jail
+    if not Framework then
+        return false, 'Core framework not available'
+    end
+
+    local OtherPlayer = Framework.GetPlayer(targetSource)
+    if not OtherPlayer then
+        return false, 'Could not find target player'
+    end
+
+    local currentDate = os.date('*t')
+    if currentDate.day == 31 then
+        currentDate.day = 30
+    end
+
+    Framework.SetMetaData(targetSource, 'injail', sentence)
+    Framework.SetMetaData(targetSource, 'criminalrecord', {
+        ['hasRecord'] = true,
+        ['date'] = currentDate
+    })
+    TriggerClientEvent('police:client:SendToJail', targetSource, sentence)
+    return true
+end
+
 -- Send to Jail
 ps.registerCallback(resourceName .. ':server:sendToJail', function(source, payload)
     local src = source
@@ -23,26 +66,11 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
         return { success = false, message = 'Could not resolve player source' }
     end
 
-    if not Framework then
-        return { success = false, message = 'Core framework not available' }
+    local success, err = sendPlayerToJail(src, targetSource, citizenId, sentence)
+    if not success then
+        return { success = false, message = err or 'Failed to send to jail' }
     end
 
-    local OtherPlayer = Framework.GetPlayer(targetSource)
-    if not OtherPlayer then
-        return { success = false, message = 'Could not find target player' }
-    end
-
-    local currentDate = os.date('*t')
-    if currentDate.day == 31 then
-        currentDate.day = 30
-    end
-
-    Framework.SetMetaData(targetSource, 'injail', sentence)
-    Framework.SetMetaData(targetSource, 'criminalrecord', {
-        ['hasRecord'] = true,
-        ['date'] = currentDate
-    })
-    TriggerClientEvent('police:client:SendToJail', targetSource, sentence)
     ps.notify(src, 'Sent to jail for ' .. sentence .. ' months', 'success')
 
     if ps.auditLog then
