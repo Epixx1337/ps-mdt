@@ -1,5 +1,48 @@
 local resourceName = tostring(GetCurrentResourceName())
 
+-- Detect housing resource
+local housingType = Config.Housing or 'auto'
+if housingType == 'auto' then
+    if GetResourceState('nolag_properties') == 'started' then
+        housingType = 'nolag_properties'
+    else
+        housingType = 'ps-housing'
+    end
+end
+
+--- Get property counts for a batch of citizenids (used in citizen list views)
+local function getPropertyCounts(citizenids, inClause)
+    local propCounts = {}
+    local propRows
+    if housingType == 'nolag_properties' then
+        propRows = MySQL.query.await(
+            ('SELECT po.identifier, COUNT(*) AS cnt FROM properties p JOIN property_owners po ON p.ownerid = po.id WHERE po.identifier IN (%s) GROUP BY po.identifier'):format(inClause),
+            citizenids
+        ) or {}
+        for _, row in ipairs(propRows) do
+            propCounts[row.identifier] = tonumber(row.cnt) or 0
+        end
+    else
+        propRows = MySQL.query.await(
+            ('SELECT citizenid, COUNT(*) AS cnt FROM player_houses WHERE citizenid IN (%s) GROUP BY citizenid'):format(inClause),
+            citizenids
+        ) or {}
+        for _, row in ipairs(propRows) do
+            propCounts[row.citizenid] = tonumber(row.cnt) or 0
+        end
+    end
+    return propCounts
+end
+
+--- Get property list for a single citizen (used in citizen detail view)
+local function getPropertyList(citizenid)
+    if housingType == 'nolag_properties' then
+        return MySQL.query.await('SELECT p.label AS house FROM properties p JOIN property_owners po ON p.ownerid = po.id WHERE po.identifier = ?', { citizenid }) or {}
+    else
+        return MySQL.query.await('SELECT house FROM player_houses WHERE citizenid = ?', { citizenid }) or {}
+    end
+end
+
 local function buildInClause(values)
     local placeholders = {}
     for i = 1, #values do
@@ -142,13 +185,7 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, page
             end
         end
 
-        local propRows = safeQuery(
-            ('SELECT citizenid, COUNT(*) AS cnt FROM player_houses WHERE citizenid IN (%s) GROUP BY citizenid'):format(inClause),
-            citizenids
-        )
-        for _, row in ipairs(propRows) do
-            propCounts[row.citizenid] = tonumber(row.cnt) or 0
-        end
+        propCounts = getPropertyCounts(citizenids, inClause)
 
         local vehRows = safeQuery(
             ('SELECT citizenid, COUNT(*) AS cnt FROM player_vehicles WHERE citizenid IN (%s) GROUP BY citizenid'):format(inClause),
@@ -275,13 +312,7 @@ ps.registerCallback(resourceName .. ':server:searchCitizens', function(source, q
             end
         end
 
-        local propRows = safeQuery(
-            ('SELECT citizenid, COUNT(*) AS cnt FROM player_houses WHERE citizenid IN (%s) GROUP BY citizenid'):format(inClause),
-            citizenids
-        )
-        for _, row in ipairs(propRows) do
-            propCounts[row.citizenid] = tonumber(row.cnt) or 0
-        end
+        propCounts = getPropertyCounts(citizenids, inClause)
 
         local vehRows = safeQuery(
             ('SELECT citizenid, COUNT(*) AS cnt FROM player_vehicles WHERE citizenid IN (%s) GROUP BY citizenid'):format(inClause),
@@ -420,7 +451,7 @@ ps.registerCallback(resourceName .. ':server:getCitizenProfile', function(source
     local flags = collectCitizenFlags({ citizenid })
     local vehicles = MySQL.query.await('SELECT plate, vehicle FROM player_vehicles WHERE citizenid = ?', { citizenid }) or {}
     local vehiclesCount = #vehicles
-    local properties = MySQL.query.await('SELECT house FROM player_houses WHERE citizenid = ?', { citizenid }) or {}
+    local properties = getPropertyList(citizenid)
     local propertiesCount = #properties
     local arrestsCount = MySQL.scalar.await('SELECT COUNT(*) FROM mdt_arrests WHERE citizenid = ?', { citizenid }) or 0
     local activeWarrants = MySQL.query.await([[

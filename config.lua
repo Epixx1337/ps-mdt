@@ -105,6 +105,9 @@ Config.FingerprintScan = {
     suspectEvent = 'police:client:showFingerprint',          -- Client event triggered on the suspect
 }
 
+-- Housing Resource
+Config.Housing = 'auto' -- 'auto' | 'ps-housing' | 'nolag_properties' (auto detects which is running)
+
 -- Fuel Resource Name
 Config.Fuel = 'LegacyFuel' -- Fuel resource name for vehicle fuel management
 
