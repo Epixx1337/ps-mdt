@@ -1,3 +1,38 @@
+--- Resolve which job list and job type to use for the roster based on the requesting player's department.
+local function resolveRosterJobs(source)
+    local playerJobType = ps.getJobType(source)
+    local playerJobName = ps.getJobName(source)
+
+    if playerJobType == Config.MedicalJobType then
+        return (Config.MedicalJobs or { 'ambulance' }), Config.MedicalJobType
+    end
+
+    if playerJobType == Config.DojJobType or (Config.DojJobs and playerJobName) then
+        for _, name in ipairs(Config.DojJobs or {}) do
+            if name == playerJobName then
+                return Config.DojJobs, Config.DojJobType
+            end
+        end
+    end
+
+    return (Config.PoliceJobs or { 'police' }), Config.PoliceJobType
+end
+
+--- Check if a job name or type matches a given job list and job type.
+local function isMatchingJob(jobName, jobType, jobList, targetJobType)
+    if jobType and targetJobType and tostring(jobType) == tostring(targetJobType) then
+        return true
+    end
+    if jobName and jobList then
+        local check = tostring(jobName)
+        for _, job in ipairs(jobList) do
+            if tostring(job) == check then
+                return true
+            end
+        end
+    end
+    return false
+end
 
 local function getRadioChannel(playerSource)
     if not playerSource then return 0 end
@@ -26,14 +61,13 @@ local function getCertifications(citizenid)
     return {}
 end
 
-local function buildRosterFromFramework()
+local function buildRosterFromFramework(jobList, targetJobType)
     local rosterList = {}
     local activeUnits = {}
     local members = {}
-    local policeJobs = (Config and Config.PoliceJobs) or { 'police' }
 
     -- Use GetGroupMembers if available (QBox)
-    for _, jobName in ipairs(policeJobs) do
+    for _, jobName in ipairs(jobList) do
         local groupMembers = Framework.GetGroupMembers(jobName, 'job') or {}
         for _, member in ipairs(groupMembers) do
             if member.citizenid then
@@ -45,8 +79,7 @@ local function buildRosterFromFramework()
     for _, player in ipairs(Framework.GetAllPlayers()) do
         local data = player.PlayerData or nil
         if data and data.job then
-            local job = data.job
-            if IsPoliceJob(job.name, job.type) then
+            if isMatchingJob(data.job.name, data.job.type, jobList, targetJobType) then
                 members[data.citizenid] = true
             end
         end
@@ -54,7 +87,7 @@ local function buildRosterFromFramework()
 
     for _, row in ipairs(MySQL.query.await('SELECT citizenid, job FROM players', {}) or {}) do
         local job = row.job and json.decode(row.job) or {}
-        if IsPoliceJob(job.name, job.type) then
+        if isMatchingJob(job.name, job.type, jobList, targetJobType) then
             members[row.citizenid] = true
         end
     end
@@ -104,36 +137,36 @@ local function buildRosterFromFramework()
     }
 end
 
-local function checkDuty(citizenid)
+local function checkDuty(citizenid, jobList, targetJobType)
     local player = ps.getPlayerByIdentifier(citizenid)
     if not player then return 'Off Duty' end
 
     local src = player.source or (player.PlayerData and player.PlayerData.source)
     if not src then return 'Off Duty' end
 
-    if IsPoliceJob(ps.getJobName(src), ps.getJobType(src)) and ps.getJobDuty(src) then
+    if isMatchingJob(ps.getJobName(src), ps.getJobType(src), jobList, targetJobType) and ps.getJobDuty(src) then
         return 'On Duty'
     end
     return 'Off Duty'
 end
 
 ps.registerCallback('ps-mdt:server:getRosterList', function(source)
+    local jobList, targetJobType = resolveRosterJobs(source)
+
     if Framework and Framework.isQBX then
-        return buildRosterFromFramework()
+        return buildRosterFromFramework(jobList, targetJobType)
     end
 
     local rosterList = {}
     local activeUnits = {}
-    local policeJobs = (Config and Config.PoliceJobs) or { 'police' }
     local jobLookup = {}
-    for _, jobName in ipairs(policeJobs) do
+    for _, jobName in ipairs(jobList) do
         jobLookup[tostring(jobName)] = true
     end
-    local jobType = Config and Config.PoliceJobType and tostring(Config.PoliceJobType) or nil
 
     local employees = {}
     if GetResourceState('ps-multijob') == 'started' and exports['ps-multijob'] then
-        for _, jobName in ipairs(policeJobs) do
+        for _, jobName in ipairs(jobList) do
             local list = exports['ps-multijob']:getEmployees(jobName) or {}
             for _, employee in pairs(list) do
                 if employee and employee.citizenid then
@@ -149,14 +182,14 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
         local job = citizen.job and json.decode(citizen.job) or {}
         local metadata = citizen.metadata and json.decode(citizen.metadata) or {}
         local jobName = job.name and tostring(job.name) or nil
-        local isPolice = (jobName and jobLookup[jobName]) or (job.type and jobType and tostring(job.type) == jobType)
-        if isPolice then
+        local isMatch = (jobName and jobLookup[jobName]) or (job.type and targetJobType and tostring(job.type) == tostring(targetJobType))
+        if isMatch then
             local employee = employees[citizenid] or {}
             local callsign = metadata.callsign or 'N/A'
             local firstName = charinfo.firstname or 'N/A'
             local lastName = charinfo.lastname or 'N/A'
             local rank = job.grade and job.grade.name or employee.grade and ps.getSharedJobGradeData(jobName or 'police', employee.grade, 'name') or 'Officer'
-            local status = checkDuty(citizenid)
+            local status = checkDuty(citizenid, jobList, targetJobType)
             local onlinePlayer = ps.getPlayerByIdentifier(citizenid)
             local onlineSrc = onlinePlayer and (onlinePlayer.source or (onlinePlayer.PlayerData and onlinePlayer.PlayerData.source)) or nil
             rosterList[#rosterList + 1] = {
@@ -166,7 +199,7 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
                 firstName = firstName,
                 lastName = lastName,
                 rank = rank,
-                department = jobName or employee.job or 'police',
+                department = jobName or employee.job or 'unknown',
                 status = status,
                 certifications = getCertifications(citizenid),
                 badgeNumber = callsign,
