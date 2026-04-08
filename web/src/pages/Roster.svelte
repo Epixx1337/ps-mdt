@@ -10,6 +10,12 @@
 
 	let { authService, tabService }: { authService?: AuthService; tabService?: any } = $props();
 
+	let labels = $derived(authService?.departmentLabels ?? { singular: 'Officer', plural: 'Officers' });
+	let memberLabel = $derived(labels.singular.toLowerCase());
+	let memberLabelPlural = $derived(labels.plural.toLowerCase());
+	let MemberLabel = $derived(labels.singular);
+	let MemberLabelPlural = $derived(labels.plural);
+
 	interface Officer {
 		id: string;
 		callsign: string;
@@ -558,7 +564,7 @@
 			class="search-input"
 		/>
 		<div class="topbar-right">
-			<span class="result-count">{filteredOfficers.length} officer{filteredOfficers.length !== 1 ? "s" : ""}</span>
+			<span class="result-count">{filteredOfficers.length} {filteredOfficers.length !== 1 ? memberLabelPlural : memberLabel}</span>
 			<button class="btn-secondary" onclick={refreshData} disabled={isLoading}>
 				{isLoading ? "Loading..." : "Refresh"}
 			</button>
@@ -585,11 +591,11 @@
 					</div>
 				{:else if filteredOfficers.length === 0}
 					<div class="empty-state">
-						<p class="empty-title">No Officers Found</p>
+						<p class="empty-title">No {MemberLabelPlural} Found</p>
 						<p class="empty-sub">
 							{searchQuery
-								? "No officers match your search criteria."
-								: "No officers are currently in the roster."}
+								? `No ${memberLabelPlural} match your search criteria.`
+								: `No ${memberLabelPlural} are currently in the roster.`}
 						</p>
 					</div>
 				{:else}
@@ -673,7 +679,7 @@
 					<div class="no-tags">
 						<span class="material-icons no-tags-icon">label_off</span>
 						<p>No certifications available.</p>
-						<p class="no-tags-hint">Create officer tags in Management &gt; Tags</p>
+						<p class="no-tags-hint">Create tags in Management &gt; Tags</p>
 					</div>
 				{:else}
 					<div class="cert-grid">
@@ -721,7 +727,7 @@
 		<div class="boss-panel" onclick={(e) => e.stopPropagation()}>
 			<div class="modal-header">
 				<div class="modal-title-area">
-					<span class="modal-title">Officer Management</span>
+					<span class="modal-title">{MemberLabel} Management</span>
 					<span class="modal-subtitle">{selectedOfficer.firstName} {selectedOfficer.lastName} &bull; {selectedOfficer.callsign} &bull; {selectedOfficer.rank}</span>
 				</div>
 				<button class="modal-close" onclick={closeBossPanel}>
@@ -762,7 +768,7 @@
 				{#if bossPanelTab === "rank"}
 					<div class="boss-section">
 						<label class="boss-label">Change Rank</label>
-						<p class="boss-hint">Select a new rank for this officer. Officer must be online.</p>
+						<p class="boss-hint">Select a new rank for this {memberLabel}. {MemberLabel} must be online.</p>
 						<div class="grade-grid">
 							{#if jobGrades.length === 0}
 								<div class="no-tags">
@@ -794,12 +800,12 @@
 					<div class="boss-divider"></div>
 
 					<div class="boss-section">
-						<label class="boss-label boss-label-danger">Terminate Officer</label>
-						<p class="boss-hint">Remove this officer from the department. This sets their job to unemployed.</p>
+						<label class="boss-label boss-label-danger">Terminate {MemberLabel}</label>
+						<p class="boss-hint">Remove this {memberLabel} from the department. This sets their job to unemployed.</p>
 						{#if !showFireConfirm}
 							<button class="btn-fire" onclick={() => showFireConfirm = true}>
 								<span class="material-icons">person_remove</span>
-								Terminate Officer
+								Terminate {MemberLabel}
 							</button>
 						{:else}
 							<div class="fire-confirm">
@@ -817,7 +823,7 @@
 				{:else if bossPanelTab === "callsign"}
 					<div class="boss-section">
 						<label class="boss-label">Edit Callsign</label>
-						<p class="boss-hint">Update this officer's callsign/badge number. Officer must be online.</p>
+						<p class="boss-hint">Update this {memberLabel}'s callsign/badge number. {MemberLabel} must be online.</p>
 						<div class="callsign-input-row">
 							<input
 								type="text"
@@ -836,7 +842,7 @@
 							<div class="no-tags">
 								<span class="material-icons no-tags-icon">label_off</span>
 								<p>No certifications available.</p>
-								<p class="no-tags-hint">Create officer tags in Management &gt; Tags</p>
+								<p class="no-tags-hint">Create tags in Management &gt; Tags</p>
 							</div>
 						{:else}
 							<div class="cert-grid">
@@ -865,13 +871,13 @@
 				{:else if bossPanelTab === "ppr"}
 					<div class="boss-section">
 						<label class="boss-label">Performance Reviews</label>
-						<p class="boss-hint">Performance planning and review entries for this officer.</p>
+						<p class="boss-hint">Performance planning and review entries for this {memberLabel}.</p>
 						{#if pprHistoryLoading}
 							<p class="boss-hint">Loading...</p>
 						{:else if pprHistory.length === 0}
 							<div class="no-tags">
 								<span class="material-icons no-tags-icon">rate_review</span>
-								<p>No PPR entries found for this officer.</p>
+								<p>No PPR entries found for this {memberLabel}.</p>
 							</div>
 						{:else}
 							<div class="ia-history-list">
@@ -897,13 +903,13 @@
 				{:else if bossPanelTab === "fto"}
 					<div class="boss-section">
 						<label class="boss-label">Field Training History</label>
-						<p class="boss-hint">FTO training assignments for this officer.</p>
+						<p class="boss-hint">FTO training assignments for this {memberLabel}.</p>
 						{#if ftoHistoryLoading}
 							<p class="boss-hint">Loading...</p>
 						{:else if ftoHistory.length === 0}
 							<div class="no-tags">
 								<span class="material-icons no-tags-icon">school</span>
-								<p>No FTO records found for this officer.</p>
+								<p>No FTO records found for this {memberLabel}.</p>
 							</div>
 						{:else}
 							<div class="ia-history-list">
@@ -940,13 +946,13 @@
 				{:else if bossPanelTab === "ia_history"}
 					<div class="boss-section">
 						<label class="boss-label">IA Complaint History</label>
-						<p class="boss-hint">Internal affairs complaints involving this officer.</p>
+						<p class="boss-hint">Internal affairs complaints involving this {memberLabel}.</p>
 						{#if iaHistoryLoading}
 							<p class="boss-hint">Loading...</p>
 						{:else if iaHistory.length === 0}
 							<div class="no-tags">
 								<span class="material-icons no-tags-icon">verified_user</span>
-								<p>No IA complaints found for this officer.</p>
+								<p>No IA complaints found for this {memberLabel}.</p>
 							</div>
 						{:else}
 							<div class="ia-history-list">

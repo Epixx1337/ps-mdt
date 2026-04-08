@@ -1,5 +1,5 @@
-function GetActiveUnits()
-    return ps.getJobCount("police")
+function GetActiveUnits(jobType)
+    return ps.getJobTypeCount(jobType or "leo")
 end
 
 --- Check if a job is a police/LEO job based on Config.PoliceJobs and Config.PoliceJobType

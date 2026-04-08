@@ -43,7 +43,7 @@ local function getRadioChannel(playerSource)
     return tonumber(channel) or 0
 end
 
-local function getCertifications(citizenid)
+local function getCertifications(citizenid, filterJobType)
     EnsureProfileExists(citizenid)
 
     local profile = MySQL.single.await('SELECT certifications FROM mdt_profiles WHERE citizenid = ?', { citizenid })
@@ -54,7 +54,25 @@ local function getCertifications(citizenid)
     if profile.certifications and profile.certifications ~= '' then
         local ok, decoded = pcall(json.decode, profile.certifications)
         if ok and type(decoded) == 'table' then
-            return decoded
+            if not filterJobType then
+                return decoded
+            end
+            -- Filter certifications to only show tags matching the viewer's department
+            local allowedTags = {}
+            local tagRows = MySQL.query.await(
+                'SELECT name FROM mdt_tags WHERE type IN (?, ?) AND (job_type = ? OR job_type = ?)',
+                { 'officer', 'both', filterJobType, 'all' }
+            ) or {}
+            for _, row in ipairs(tagRows) do
+                allowedTags[row.name] = true
+            end
+            local filtered = {}
+            for _, cert in ipairs(decoded) do
+                if allowedTags[cert] then
+                    filtered[#filtered + 1] = cert
+                end
+            end
+            return filtered
         end
     end
 
@@ -102,7 +120,7 @@ local function buildRosterFromFramework(jobList, targetJobType)
             local fullname = data.charinfo and (data.charinfo.firstname .. ' ' .. data.charinfo.lastname) or 'Unknown'
             local rank = job.grade and job.grade.name or 'Officer'
             local department = job.name or 'police'
-            local certifications = getCertifications(citizenid)
+            local certifications = getCertifications(citizenid, targetJobType)
 
             local onlineSrc = onlinePlayer and (onlinePlayer.PlayerData and onlinePlayer.PlayerData.source or onlinePlayer.source) or nil
             rosterList[#rosterList + 1] = {
@@ -201,7 +219,7 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
                 rank = rank,
                 department = jobName or employee.job or 'unknown',
                 status = status,
-                certifications = getCertifications(citizenid),
+                certifications = getCertifications(citizenid, targetJobType),
                 badgeNumber = callsign,
                 radioChannel = getRadioChannel(onlineSrc)
             }
@@ -229,7 +247,7 @@ ps.registerCallback('ps-mdt:server:getOfficerTags', function(source)
 
     local jobType = ps.getJobType(src)
     local rows
-    if jobType and (jobType == 'leo' or jobType == 'ems') then
+    if jobType and (jobType == 'leo' or jobType == 'ems' or jobType == 'doj') then
         rows = MySQL.query.await([[
             SELECT id, name, color FROM mdt_tags
             WHERE type IN ('officer', 'both')

@@ -145,6 +145,13 @@ Config.MedicalJobs = {
     'ambulance',
 }
 
+-- Department member labels (used in roster and UI text)
+Config.DepartmentLabels = {
+    leo = { singular = 'Officer', plural = 'Officers' },
+    ems = { singular = 'Medic', plural = 'Medics' },
+    doj = { singular = 'Member', plural = 'Members' },
+}
+
 Config.Uploads = {
     MaxBytes = 5242880, -- 5 MB
     RateLimitPerMinute = 10, -- Max uploads per player per minute (0 = unlimited)

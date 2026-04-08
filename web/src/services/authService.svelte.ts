@@ -3,8 +3,14 @@ import { fetchNui } from "../utils/fetchNui";
 import { debugError } from "../utils/debug";
 import { TIMING } from "../constants";
 import { NUI_EVENTS } from "../constants/nuiEvents";
-import type { AuthUpdateData } from "../interfaces/IUser";
+import type { AuthUpdateData, DepartmentLabels } from "../interfaces/IUser";
 import type { JobType } from "../interfaces/IUser";
+
+const DEFAULT_LABELS: Record<string, DepartmentLabels> = {
+	leo: { singular: 'Officer', plural: 'Officers' },
+	ems: { singular: 'Medic', plural: 'Medics' },
+	doj: { singular: 'Member', plural: 'Members' },
+};
 
 export interface AuthState {
 	isAuthorized: boolean;
@@ -60,6 +66,7 @@ export function createAuthService() {
 	let isBoss = $state(false);
 	let jobType = $state<JobType>('leo');
 	let isCivilian = $state(false);
+	let departmentLabels = $state<DepartmentLabels>({ singular: 'Officer', plural: 'Officers' });
 
 	const playerInfo = $derived((): PlayerInfo => {
 		if (!playerData) {
@@ -107,6 +114,7 @@ export function createAuthService() {
 		isBoss = data.isBoss || false;
 		jobType = data.jobType || 'leo';
 		isCivilian = data.isCivilian || false;
+		departmentLabels = data.departmentLabels || DEFAULT_LABELS[jobType] || DEFAULT_LABELS.leo;
 
 		// Civilians are always authorized for their limited view
 		if (isCivilian) {
@@ -335,6 +343,9 @@ export function createAuthService() {
 		get isCivilian() {
 			return isCivilian;
 		},
+		get departmentLabels() {
+			return departmentLabels;
+		},
 
 		// Actions
 		/** Updates authentication state from NUI event data */
@@ -380,6 +391,7 @@ export interface AuthService {
 	readonly isBoss: boolean;
 	readonly jobType: JobType;
 	readonly isCivilian: boolean;
+	readonly departmentLabels: DepartmentLabels;
 
 	// Actions
 	updateAuthState: (data: AuthUpdateData) => void;

@@ -21,12 +21,15 @@ function NUIUpdateAuthWithData(jobData)
     local authorized, jobType = isAuthorizedJob(job)
     local onDuty = job and job.onduty or false
 
+    local labels = Config.DepartmentLabels and Config.DepartmentLabels[jobType or 'leo'] or nil
+
     SendNUI('updateAuth', {
         authorized = authorized and onDuty,
         playerData = ps.getPlayerData(),
         isLEO = authorized,
         onDuty = onDuty,
-        jobType = jobType or 'leo'
+        jobType = jobType or 'leo',
+        departmentLabels = labels,
     })
 end
 

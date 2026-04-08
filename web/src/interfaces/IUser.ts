@@ -2,6 +2,11 @@ import type { PlayerData } from "./IPlayerData";
 
 export type JobType = 'leo' | 'ems' | 'doj' | 'civilian';
 
+export interface DepartmentLabels {
+	singular: string;
+	plural: string;
+}
+
 export interface AuthUpdateData {
 	playerData?: PlayerData;
 	isLEO?: boolean;
@@ -11,4 +16,5 @@ export interface AuthUpdateData {
 	isBoss?: boolean;
 	jobType?: JobType;
 	isCivilian?: boolean;
+	departmentLabels?: DepartmentLabels;
 }

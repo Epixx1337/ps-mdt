@@ -194,7 +194,7 @@ local function buildReportAccessClause()
                 SELECT 1 FROM mdt_reports_restrictions mrr_ems
                 WHERE mrr_ems.reportid = mr.id AND mrr_ems.type = 'jobtype' AND mrr_ems.identifier = 'ems'
             ))
-            OR (mrr.reportid IS NULL AND (? = 'leo' OR ? = 'ems'))
+            OR (mrr.reportid IS NULL AND (? = 'leo' OR ? = 'ems' OR ? = 'doj'))
             OR (mrr.type = 'citizenid' AND mrr.identifier = ?)
             OR (mrr.type = 'job' AND mrr.identifier = ?)
             OR (mrr.type = 'jobtype' AND mrr.identifier = ?)
@@ -246,7 +246,7 @@ ps.registerCallback(resourceName .. ':server:getReports', function(source, page,
 		LIMIT %d
 		OFFSET %d
 	]]):format(buildReportAccessClause(), filterClause, limit, offset)
-	local params = { jobType, jobType, jobType, identifier, job, jobType }
+	local params = { jobType, jobType, jobType, jobType, identifier, job, jobType }
 	for _, value in ipairs(filterValues or {}) do
 		params[#params + 1] = value
 	end
@@ -1001,7 +1001,7 @@ ps.registerCallback(resourceName..':server:getReportAnalytics', function(source,
         WHERE %s%s
           AND mr.type = 'Incident Report'
 	]]):format(accessClause, filterClause)
-	local incidentParams = { jobType, jobType, jobType, identifier, job, jobType }
+	local incidentParams = { jobType, jobType, jobType, jobType, identifier, job, jobType }
 	for _, value in ipairs(filterValues or {}) do
 		incidentParams[#incidentParams + 1] = value
 	end
@@ -1014,7 +1014,7 @@ ps.registerCallback(resourceName..':server:getReportAnalytics', function(source,
         LEFT JOIN mdt_reports_restrictions AS mrr ON mr.id = mrr.reportid
         WHERE %s%s
 	]]):format(accessClause, filterClause)
-	local arrestParams = { jobType, jobType, jobType, identifier, job, jobType }
+	local arrestParams = { jobType, jobType, jobType, jobType, identifier, job, jobType }
 	for _, value in ipairs(filterValues or {}) do
 		arrestParams[#arrestParams + 1] = value
 	end
@@ -1028,7 +1028,7 @@ ps.registerCallback(resourceName..':server:getReportAnalytics', function(source,
         WHERE %s%s
           AND mw.expirydate >= NOW()
 	]]):format(accessClause, filterClause)
-	local warrantParams = { jobType, jobType, jobType, identifier, job, jobType }
+	local warrantParams = { jobType, jobType, jobType, jobType, identifier, job, jobType }
 	for _, value in ipairs(filterValues or {}) do
 		warrantParams[#warrantParams + 1] = value
 	end

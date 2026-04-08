@@ -170,7 +170,7 @@ ps.registerCallback(resourceName .. ':server:getRecentReports', function(source,
                 SELECT 1 FROM mdt_reports_restrictions mrr_ems
                 WHERE mrr_ems.reportid = mr.id AND mrr_ems.type = 'jobtype' AND mrr_ems.identifier = 'ems'
             ))
-            OR (mrr.reportid IS NULL AND (? = 'leo' OR ? = 'ems'))
+            OR (mrr.reportid IS NULL AND (? = 'leo' OR ? = 'ems' OR ? = 'doj'))
             OR (mrr.type = 'citizenid' AND mrr.identifier = ?)
             OR (mrr.type = 'job' AND mrr.identifier = ?)
             OR (mrr.type = 'jobtype' AND mrr.identifier = ?)
@@ -179,7 +179,7 @@ ps.registerCallback(resourceName .. ':server:getRecentReports', function(source,
         ORDER BY mr.datecreated DESC
         LIMIT ?
         OFFSET ?
-    ]], { jobType, jobType, jobType, identifier, job, jobType, pageSize, offset })
+    ]], { jobType, jobType, jobType, jobType, identifier, job, jobType, pageSize, offset })
     return rows or {}
 end)
 
@@ -207,8 +207,9 @@ end)
 ps.registerCallback(resourceName .. ':server:getActiveUnits', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
-    return Cache.getOrSet('dashboard:activeUnits', Config.CacheTTL and Config.CacheTTL.ActiveUnits or 10, function()
-        return { count = ps.getJobTypeCount('leo') }
+    local playerJobType = ps.getJobType(src) or 'leo'
+    return Cache.getOrSet('dashboard:activeUnits:' .. playerJobType, Config.CacheTTL and Config.CacheTTL.ActiveUnits or 10, function()
+        return { count = ps.getJobTypeCount(playerJobType) }
     end)
 end)
 

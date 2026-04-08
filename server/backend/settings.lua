@@ -287,7 +287,7 @@ ps.registerCallback(resourceName .. ':server:saveReportTemplate', function(sourc
 
     local jobType = tostring(payload.jobType or 'all'):sub(1, 10)
     -- Validate job_type
-    if jobType ~= 'leo' and jobType ~= 'ems' and jobType ~= 'all' then
+    if jobType ~= 'leo' and jobType ~= 'ems' and jobType ~= 'doj' and jobType ~= 'all' then
         jobType = 'all'
     end
 

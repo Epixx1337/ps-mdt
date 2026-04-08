@@ -331,7 +331,7 @@ ps.registerCallback(resourceName .. ':server:getTags', function(source, data)
     local jobType = data.jobType
 
     local query, params
-    if jobType and (jobType == 'leo' or jobType == 'ems') then
+    if jobType and (jobType == 'leo' or jobType == 'ems' or jobType == 'doj') then
         query = [[
             SELECT t.id, t.name, t.type, t.color, t.job_type, t.created_at,
                    (SELECT COUNT(*) FROM mdt_profiles_tags pt WHERE pt.tag = t.name) +
