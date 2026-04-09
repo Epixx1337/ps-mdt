@@ -5,12 +5,28 @@ ps = exports.ps_lib:init()
 Config.Debug = false -- Enable/disable debug mode (boolean)
 Config.OnlyShowOnDuty = true -- Only allow the MDT to be opened when on duty (boolean)
 
+-- Item Requirement (requires an item in inventory to open MDT)
+Config.ItemRequirement = {
+    enabled = false,    -- Enable/disable item requirement (boolean)
+    item = 'tablet',    -- Item name to check for (string)
+}
+
 -- Civilian Access Settings
 Config.CivilianAccess = {
     enabled = true,   -- Allow civilians to open the MDT (profile + legislation view only)
     command = true,   -- Allow /mdt command for civilians
     showWarrants = true, -- Show active warrants on civilian profile
     showBolos = true,    -- Show active BOLOs on civilian profile
+}
+
+-- Civilian MDT Target (place a target point where civilians can access MDT without an item)
+Config.CivilianTarget = {
+    enabled = false,  -- Enable/disable target point (boolean)
+    label = 'Access Public Records',
+    icon = 'fas fa-desktop',
+    locations = {     -- Add as many locations as you want
+        { coords = vector3(-544.16, -204.92, 38.22), size = vector3(1.0, 1.0, 2.0), rotation = 0.0 },  -- City Hall
+    },
 }
 
 -- Time and Date Settings

@@ -312,6 +312,28 @@ function getCitizens(source)
     return result
 end
 
+-- Item check fallback (when ox_inventory/qb-inventory not detected client-side)
+ps.registerCallback(tostring(GetCurrentResourceName()) .. ':server:hasItem', function(source, itemName)
+    if not source or not itemName then return false end
+    if GetResourceState('ox_inventory') == 'started' then
+        local items = exports.ox_inventory:GetInventoryItems(source)
+        if items then
+            for _, item in pairs(items) do
+                if item.name == itemName and (item.count or 1) > 0 then return true end
+            end
+        end
+        return false
+    end
+    if Framework then
+        local player = Framework.GetPlayer(source)
+        if player then
+            local item = Framework.GetItemByName(player, itemName)
+            return item ~= nil
+        end
+    end
+    return false
+end)
+
 ps.registerCallback('ps-mdt:hasProfile', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')

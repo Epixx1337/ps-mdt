@@ -94,19 +94,39 @@ CreateThread(function()
 end)
 
 -- Control state management
-local function toggleControls(state)
+function toggleControls(state)
     controlsDisabled = state
 end
 
 -- MDT Display ------------------------------------------------
 
 -- Open MDT
-function OpenMDT()
+function OpenMDT(skipItemCheck)
     -- Check auth
     local authResult = CheckAuth()
 
     local isCivilian = type(authResult) == 'table' and authResult.isCivilian
     if not authResult and not isCivilian then return end
+
+    -- Check item requirement (skipped when opened via target)
+    if not skipItemCheck and Config.ItemRequirement and Config.ItemRequirement.enabled then
+        local itemName = Config.ItemRequirement.item or 'tablet'
+        local hasItem = false
+
+        if GetResourceState('ox_inventory') == 'started' then
+            local count = exports.ox_inventory:Search('count', itemName)
+            hasItem = count and count > 0
+        elseif GetResourceState('qb-inventory') == 'started' then
+            hasItem = exports['qb-inventory']:HasItem(itemName)
+        else
+            hasItem = ps.callback(resourceName .. ':server:hasItem', itemName)
+        end
+
+        if not hasItem then
+            ps.notify('You need a ' .. itemName .. ' to access the MDT', 'error')
+            return
+        end
+    end
 
     -- Don't allow if player is dead
     if ps.isDead() then

@@ -33,6 +33,10 @@ end)
 -- Open civilian MDT (profile + legislation view)
 exports('openCivilianMDT', function()
     if MDTOpen then return end
+    if ps.isDead() then
+        ps.notify('You cannot access records right now', 'error')
+        return
+    end
     MDTOpen = true
     local playerData = ps.getPlayerData()
     SendNUI('setVisible', { visible = true, debugMode = Config.Debug })
@@ -46,4 +50,36 @@ exports('openCivilianMDT', function()
     })
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
+    toggleControls(true)
+end)
+
+-- Civilian MDT target points
+CreateThread(function()
+    local cfg = Config.CivilianTarget
+    if not cfg or not cfg.enabled then return end
+    if not Config.CivilianAccess or not Config.CivilianAccess.enabled then return end
+
+    -- Wait for ox_target to be available
+    if GetResourceState('ox_target') ~= 'started' then return end
+
+    for i, loc in ipairs(cfg.locations or {}) do
+        exports.ox_target:addBoxZone({
+            coords = loc.coords,
+            size = loc.size or vector3(1.0, 1.0, 2.0),
+            rotation = loc.rotation or 0.0,
+            debug = Config.Debug,
+            options = {
+                {
+                    name = 'ps-mdt:civilian_access_' .. i,
+                    label = cfg.label or 'Access Public Records',
+                    icon = cfg.icon or 'fas fa-desktop',
+                    onSelect = function()
+                        exports[GetCurrentResourceName()]:openCivilianMDT()
+                    end,
+                },
+            },
+        })
+    end
+
+    ps.debug('Registered ' .. #(cfg.locations or {}) .. ' civilian MDT target(s)')
 end)
