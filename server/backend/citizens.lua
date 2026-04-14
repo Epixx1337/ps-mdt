@@ -128,13 +128,23 @@ local function safeQuery(query, params)
 end
 
 -- getCitizens - pulls citizens from database with pagination support
-ps.registerCallback(resourceName .. ':server:getCitizens', function(source, page)
+ps.registerCallback(resourceName .. ':server:getCitizens', function(source, payload)
     local src = source
-    if not CheckAuth(src) then return {} end
-    local startTime = os.clock()
-    page = page or 1 -- Default to page 1 if not provided
+    local page = type(payload) == 'table' and payload.page or payload or 1
+    page = tonumber(page) or 1
     local limit = Config.Pagination and Config.Pagination.Citizens or 20
     local offset = (page - 1) * limit
+
+    local function emptyResponse()
+        return { data = {}, total = 0, totalPages = 0, page = page, limit = limit }
+    end
+
+    if not CheckAuth(src) then return emptyResponse() end
+    local startTime = os.clock()
+
+    -- Total count (for pagination metadata)
+    local total = tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM players')) or 0
+    local totalPages = total > 0 and math.ceil(total / limit) or 0
 
     -- Main query with pagination
     local query = [[
@@ -147,10 +157,13 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, page
         FROM players AS p
         LEFT JOIN mdt_profiles AS mp
         ON CONVERT(p.citizenid USING utf8mb4) COLLATE utf8mb4_general_ci = CONVERT(mp.citizenid USING utf8mb4) COLLATE utf8mb4_general_ci
+        ORDER BY lastname ASC, firstname ASC
         LIMIT ? OFFSET ?
     ]]
     local result = safeQuery(query, { limit, offset })
-    if not result or #result == 0 then return {} end
+    if not result or #result == 0 then
+        return { data = {}, total = total, totalPages = totalPages, page = page, limit = limit }
+    end
 
     local citizenids = {}
     for _, v in ipairs(result) do
@@ -204,8 +217,8 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, page
         end
     end
 
-    for _, v in ipairs(result) do
-        v.id = _
+    for i, v in ipairs(result) do
+        v.id = i
         v.cid = v.citizenid
         v.firstName = v.firstname
         v.lastName = v.lastname
@@ -223,11 +236,13 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, page
     local elapsedTime = (endTime - startTime) * 1000
     ps.debug(string.format("getCitizens callback executed in %.2f ms for page %d", elapsedTime, page))
 
-    if result[1] then
-        ps.debug('[getCitizens] Sample citizen data structure:', result[1])
-    end
-
-    return result
+    return {
+        data = result,
+        total = total,
+        totalPages = totalPages,
+        page = page,
+        limit = limit,
+    }
 end)
 
 -- searchPlayers - searches the database for citizens by provided query (first/last name, citizenid, phone number, occupation)

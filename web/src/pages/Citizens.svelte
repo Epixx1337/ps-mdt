@@ -108,9 +108,10 @@
 	let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	let citizenPage = $state(1);
-	let citizenPerPage = $state(25);
+	let citizenPerPage = $state(20);
+	let citizenTotalItems = $state(0);
 
-	let allFilteredCitizens = $derived.by(() => {
+	let filteredCitizens = $derived.by(() => {
 		const query = searchQuery.trim().toLowerCase();
 		if (!query) return citizens;
 		return citizens.filter(({ firstName, lastName, cid, phone }) =>
@@ -120,24 +121,34 @@
 		);
 	});
 
-	let citizenTotalPages = $derived(Math.max(1, Math.ceil(allFilteredCitizens.length / citizenPerPage)));
-
-	let filteredCitizens = $derived.by(() => {
-		const start = (citizenPage - 1) * citizenPerPage;
-		return allFilteredCitizens.slice(start, start + citizenPerPage);
-	});
-
 	// Reset to page 1 when search changes
 	$effect(() => {
 		searchQuery;
 		citizenPage = 1;
 	});
 
+	// Re-fetch when page changes
+	$effect(() => {
+		citizenPage;
+		if (!isEnvBrowser()) {
+			fetchCitizens();
+		}
+	});
+
 	async function fetchCitizens() {
 		loading = true;
 		try {
-			const result = await fetchNui(NUI_EVENTS.CITIZEN.GET_CITIZENS);
-			citizens = Array.isArray(result) ? result : [];
+			const result = await fetchNui<{ data?: Citizen[]; total?: number; totalPages?: number } | Citizen[]>(
+				NUI_EVENTS.CITIZEN.GET_CITIZENS,
+				{ page: citizenPage },
+			);
+			if (Array.isArray(result)) {
+				citizens = result;
+				citizenTotalItems = result.length;
+			} else {
+				citizens = Array.isArray(result?.data) ? result.data : [];
+				citizenTotalItems = Number(result?.total) || citizens.length;
+			}
 		} catch (error) {
 			globalNotifications.error("Failed to fetch citizens");
 			citizens = [];
@@ -146,7 +157,7 @@
 	}
 
 
-	onMount(async () => {
+	onMount(() => {
 		if (isEnvBrowser()) {
 			loading = false;
 			citizens = [
@@ -154,9 +165,7 @@
 				{ id: 2, cid: 'DEF67890', firstName: 'Sarah', lastName: 'Chen', gender: 'Female', dob: '1995-11-22', phone: '555-0299', image: '', occupations: ['Doctor'], properties: 1, vehicles: 1, arrests: 0, flags: [] },
 				{ id: 3, cid: 'GHI11223', firstName: 'James', lastName: 'Wilson', gender: 'Male', dob: '1988-03-08', phone: '555-0377', image: '', occupations: ['Unemployed'], properties: 0, vehicles: 2, arrests: 5, flags: ['Flight Risk'] },
 			];
-			return;
 		}
-		await fetchCitizens();
 	});
 
 	useNuiEvent<Citizen[]>(NUI_EVENTS.CITIZEN.UPDATE_CITIZENS, (data) => {
@@ -1077,7 +1086,7 @@
 				{/if}
 				<Pagination
 					currentPage={citizenPage}
-					totalItems={allFilteredCitizens.length}
+					totalItems={citizenTotalItems}
 					perPage={citizenPerPage}
 					onPageChange={(p) => { citizenPage = p; }}
 					onPerPageChange={(pp) => { citizenPerPage = pp; citizenPage = 1; }}
