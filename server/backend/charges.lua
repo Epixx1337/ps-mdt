@@ -1,7 +1,7 @@
 
 local resourceName = tostring(GetCurrentResourceName())
 
-ps.registerCallback('ps-mdt:getChargeList', function(source)
+Bridge.registerCallback('ps-mdt:getChargeList', function(source)
     -- Allow civilians to view charges (legislation) if civilian access is enabled
     local civAccess = Config.CivilianAccess
     if not CheckAuth(source) and not (civAccess and civAccess.enabled) then return {} end
@@ -23,9 +23,9 @@ ps.registerCallback('ps-mdt:getChargeList', function(source)
         FROM mdt_penal_codes
         ORDER BY charge_class, label
     ]], {})
-    ps.debug('[getChargeList] rows', rows and #rows or 0)
+    Bridge.debug('[getChargeList] rows', rows and #rows or 0)
     if Config and Config.Debug and rows and rows[1] then
-        ps.debug('[getChargeList] sample', rows[1])
+        Bridge.debug('[getChargeList] sample', rows[1])
     end
     return rows
 end)
@@ -33,7 +33,7 @@ end)
 -- Process a fine - deduct money from citizen's bank account
 -- Ported from ps-mdt v1 (mdt:server:removeMoney)
 local fineAntiSpam = false
-ps.registerCallback(resourceName .. ':server:processFine', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:processFine', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -56,15 +56,15 @@ ps.registerCallback(resourceName .. ':server:processFine', function(source, payl
     end
 
     -- Try to get online player first
-    local Player = ps.getPlayerByIdentifier(citizenId)
+    local Player = Bridge.getPlayerByIdentifier(citizenId)
     if not Player then
         return { success = false, message = 'Player must be online to process fine' }
     end
 
     -- Remove money from bank
-    local removed = ps.removeMoney(Player.source or Player.PlayerData.source, 'bank', fine, 'mdt-fine')
+    local removed = Bridge.removeMoney(Player.source or Player.PlayerData.source, 'bank', fine, 'mdt-fine')
     if removed then
-        ps.notify(Player.source or Player.PlayerData.source, '$' .. fine .. ' fine deducted from your bank account', 'error')
+        Bridge.notify(Player.source or Player.PlayerData.source, '$' .. fine .. ' fine deducted from your bank account', 'error')
 
         -- Anti-spam cooldown
         fineAntiSpam = true
@@ -73,9 +73,9 @@ ps.registerCallback(resourceName .. ':server:processFine', function(source, payl
             fineAntiSpam = false
         end)
 
-        if ps.auditLog then
-            local officerName = ps.getPlayerName(src) or 'Unknown Officer'
-            ps.auditLog(src, 'fine_processed', 'fine', reportId and tostring(reportId) or nil, {
+        if Bridge.auditLog then
+            local officerName = Bridge.getPlayerName(src) or 'Unknown Officer'
+            Bridge.auditLog(src, 'fine_processed', 'fine', reportId and tostring(reportId) or nil, {
                 citizenid = citizenId,
                 fine = fine,
                 officer = officerName,
@@ -88,7 +88,7 @@ ps.registerCallback(resourceName .. ':server:processFine', function(source, payl
     end
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCharge', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCharge', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
     if not CheckPermission(src, 'charges_edit') then
@@ -130,8 +130,8 @@ ps.registerCallback(resourceName .. ':server:updateCharge', function(source, pay
         WHERE code = ?
     ]]):format(table.concat(penalUpdates, ', ')), penalValues)
 
-    if penalUpdated and penalUpdated > 0 and ps.auditLog then
-        ps.auditLog(src, 'charge_updated', 'charge', payload.code, {
+    if penalUpdated and penalUpdated > 0 and Bridge.auditLog then
+        Bridge.auditLog(src, 'charge_updated', 'charge', payload.code, {
             label = payload.label,
             fine = payload.fine,
             time = payload.time,

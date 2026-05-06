@@ -6,7 +6,7 @@ RegisterNUICallback('createCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:createCase', data)
+    local result = Bridge.callback(resourceName .. ':server:createCase', data)
     cb(result or { success = false })
 end)
 
@@ -18,7 +18,7 @@ RegisterNUICallback('getCases', function(data, cb)
 
     local page = data and data.page or 1
     local filters = data and data.filters or {}
-    local result = ps.callback(resourceName .. ':server:getCases', page, filters)
+    local result = Bridge.callback(resourceName .. ':server:getCases', page, filters)
     cb(result or { cases = {}, hasMore = false })
 end)
 
@@ -33,7 +33,7 @@ RegisterNUICallback('getCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getCase', data.caseId)
+    local result = Bridge.callback(resourceName .. ':server:getCase', data.caseId)
     cb(result or { success = false })
 end)
 
@@ -44,7 +44,7 @@ RegisterNUICallback('linkReportToCase', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:linkReportToCase',
         data.reportId,
         data.caseId
@@ -59,7 +59,7 @@ RegisterNUICallback('unlinkReportFromCase', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:unlinkReportFromCase',
         data.reportId,
         data.caseId
@@ -78,7 +78,7 @@ RegisterNUICallback('getCaseEvidencePage', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:getCaseEvidencePage',
         data.caseId,
         data.page,
@@ -98,7 +98,7 @@ RegisterNUICallback('updateCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateCase', data.caseId, data.payload or {})
+    local result = Bridge.callback(resourceName .. ':server:updateCase', data.caseId, data.payload or {})
     cb(result or { success = false })
 end)
 
@@ -113,7 +113,7 @@ RegisterNUICallback('deleteCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:deleteCase', data.caseId)
+    local result = Bridge.callback(resourceName .. ':server:deleteCase', data.caseId)
     cb(result or { success = false })
 end)
 
@@ -123,7 +123,7 @@ RegisterNUICallback('assignCaseOfficer', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:assignCaseOfficer',
         data.caseId,
         data.citizenid,
@@ -138,7 +138,7 @@ RegisterNUICallback('removeCaseOfficer', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:removeCaseOfficer',
         data.caseId,
         data.citizenid
@@ -152,7 +152,7 @@ RegisterNUICallback('addCaseAttachment', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:addCaseAttachment',
         data.caseId,
         data.attachment
@@ -166,7 +166,7 @@ RegisterNUICallback('addCaseAttachmentUpload', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:addCaseAttachmentUpload',
         data.caseId,
         data.attachment
@@ -180,7 +180,7 @@ RegisterNUICallback('removeCaseAttachment', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:removeCaseAttachment', data.attachmentId)
+    local result = Bridge.callback(resourceName .. ':server:removeCaseAttachment', data.attachmentId)
     cb(result or { success = false })
 end)
 
@@ -190,7 +190,7 @@ RegisterNUICallback('addEvidenceItem', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:addEvidenceItem',
         data.caseId,
         data.evidence
@@ -204,7 +204,7 @@ RegisterNUICallback('updateEvidenceItem', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:updateEvidenceItem',
         data.evidenceId,
         data.evidence
@@ -218,7 +218,7 @@ RegisterNUICallback('transferEvidenceItem', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:transferEvidenceItem',
         data.evidenceId,
         data.toCitizenId,
@@ -233,7 +233,7 @@ RegisterNUICallback('deleteEvidenceItem', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:deleteEvidenceItem', data.evidenceId)
+    local result = Bridge.callback(resourceName .. ':server:deleteEvidenceItem', data.evidenceId)
     cb(result or { success = false })
 end)
 
@@ -243,7 +243,7 @@ RegisterNUICallback('getEvidenceCustody', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getEvidenceCustody', data.evidenceId)
+    local result = Bridge.callback(resourceName .. ':server:getEvidenceCustody', data.evidenceId)
     cb(result or {})
 end)
 
@@ -254,7 +254,7 @@ RegisterNUICallback('linkEvidenceToCase', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:linkEvidenceToCase',
         data.evidenceId,
         data.caseId,
@@ -270,7 +270,7 @@ RegisterNUICallback('linkEvidenceToReport', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:linkEvidenceToReport',
         data.evidenceId,
         data.reportId
@@ -285,7 +285,7 @@ RegisterNUICallback('createCaseFromEvidence', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:createCaseFromEvidence',
         data.evidenceId,
         data.reportId
@@ -299,7 +299,7 @@ RegisterNUICallback('addEvidenceImage', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:addEvidenceImage',
         data.evidenceId,
         data.image
@@ -313,7 +313,7 @@ RegisterNUICallback('removeEvidenceImage', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:removeEvidenceImage', data.imageId)
+    local result = Bridge.callback(resourceName .. ':server:removeEvidenceImage', data.imageId)
     cb(result or { success = false })
 end)
 
@@ -327,7 +327,7 @@ RegisterNUICallback('getEvidenceItems', function(data, cb)
     local page = data.page or 1
     local limit = data.limit or 20
     local filters = data.filters or {}
-    local result = ps.callback(resourceName .. ':server:getEvidenceItems', page, limit, filters)
+    local result = Bridge.callback(resourceName .. ':server:getEvidenceItems', page, limit, filters)
     cb(result or { success = false })
 end)
 
@@ -341,7 +341,7 @@ RegisterNUICallback('searchEvidenceItems', function(data, cb)
     local query = data.query or ''
     local page = data.page or 1
     local limit = data.limit or 20
-    local result = ps.callback(resourceName .. ':server:searchEvidenceItems', query, page, limit)
+    local result = Bridge.callback(resourceName .. ':server:searchEvidenceItems', query, page, limit)
     cb(result or { success = false })
 end)
 
@@ -356,7 +356,7 @@ RegisterNUICallback('logEvidenceViewed', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:logEvidenceViewed', data.evidenceId)
+    local result = Bridge.callback(resourceName .. ':server:logEvidenceViewed', data.evidenceId)
     cb(result or { success = false })
 end)
 
@@ -366,7 +366,7 @@ RegisterNUICallback('addCaseNote', function(data, cb)
         cb({ success = false, message = 'Missing case ID or note content' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:addCaseNote', data.caseId, data.content)
+    local result = Bridge.callback(resourceName .. ':server:addCaseNote', data.caseId, data.content)
     cb(result or { success = false })
 end)
 
@@ -376,7 +376,7 @@ RegisterNUICallback('deleteCaseNote', function(data, cb)
         cb({ success = false, message = 'Missing note ID or case ID' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:deleteCaseNote', data.noteId, data.caseId)
+    local result = Bridge.callback(resourceName .. ':server:deleteCaseNote', data.noteId, data.caseId)
     cb(result or { success = false })
 end)
 

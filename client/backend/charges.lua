@@ -2,7 +2,7 @@ local resourceName = tostring(GetCurrentResourceName())
 
 RegisterNUICallback('getCharges', function(data, cb)
     if not MDTOpen then cb({}) return end
-    local callbacks = ps.callback('ps-mdt:getChargeList', false)
+    local callbacks = Bridge.callback('ps-mdt:getChargeList', false)
     cb(callbacks)
 end)
 
@@ -17,7 +17,7 @@ RegisterNUICallback('processFine', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:processFine', data)
+    local result = Bridge.callback(resourceName .. ':server:processFine', data)
     cb(result or { success = false, message = 'Failed to process fine' })
 end)
 
@@ -32,6 +32,6 @@ RegisterNUICallback('updateCharge', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateCharge', data)
+    local result = Bridge.callback(resourceName .. ':server:updateCharge', data)
     cb(result or { success = false, message = 'Failed to update charge' })
 end)

@@ -8,9 +8,9 @@ local function getActorData(src)
         }
     end
 
-    local citizenid = ps.getIdentifier(src)
-    local name = ps.getPlayerName(src) or 'Unknown'
-    local callsign = ps.getMetadata(src, 'callsign')
+    local citizenid = Bridge.getIdentifier(src)
+    local name = Bridge.getPlayerName(src) or 'Unknown'
+    local callsign = Bridge.getMetadata(src, 'callsign')
     if callsign and callsign ~= '' then
         name = callsign .. ' ' .. name
     end
@@ -23,7 +23,7 @@ end
 
 local function writeAuditLog(src, action, entityType, entityId, details)
     -- Check if this action's category is tracked
-    if ps.isActionTracked and not ps.isActionTracked(action) then
+    if Bridge.isActionTracked and not Bridge.isActionTracked(action) then
         return
     end
 
@@ -54,9 +54,9 @@ local function writeAuditLog(src, action, entityType, entityId, details)
     end
 end
 
-ps.auditLog = writeAuditLog
+Bridge.auditLog = writeAuditLog
 
-ps.registerCallback(resourceName .. ':server:getAuditLogs', function(source, params)
+Bridge.registerCallback(resourceName .. ':server:getAuditLogs', function(source, params)
     local src = source
     if not CheckAuth(src) then return { items = {}, total = 0 } end
 
@@ -125,7 +125,7 @@ ps.registerCallback(resourceName .. ':server:getAuditLogs', function(source, par
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:getAuditLogsByCase', function(source, caseId, page, limit)
+Bridge.registerCallback(resourceName .. ':server:getAuditLogsByCase', function(source, caseId, page, limit)
     local src = source
     if not CheckAuth(src) then return {} end
 

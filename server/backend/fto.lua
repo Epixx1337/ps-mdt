@@ -6,20 +6,20 @@ local function buildFTONumber(id)
 end
 
 -- Get phases for job
-ps.registerCallback(resourceName .. ':server:getFTOPhases', function(source)
+Bridge.registerCallback(resourceName .. ':server:getFTOPhases', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
-    local job = ps.getJobName(src) or 'police'
+    local job = Bridge.getJobName(src) or 'police'
     local ok, rows = pcall(MySQL.query.await, 'SELECT * FROM mdt_fto_phases WHERE job = ? ORDER BY sort_order ASC', { job })
     return (ok and rows) or {}
 end)
 
 -- Save phases (replace all for job)
-ps.registerCallback(resourceName .. ':server:saveFTOPhases', function(source, phases)
+Bridge.registerCallback(resourceName .. ':server:saveFTOPhases', function(source, phases)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
-    local job = ps.getJobName(src) or 'police'
+    local job = Bridge.getJobName(src) or 'police'
     phases = phases or {}
 
     MySQL.query.await('DELETE FROM mdt_fto_phases WHERE job = ?', { job })
@@ -32,20 +32,20 @@ ps.registerCallback(resourceName .. ':server:saveFTOPhases', function(source, ph
 end)
 
 -- Get competencies for job
-ps.registerCallback(resourceName .. ':server:getFTOCompetencies', function(source)
+Bridge.registerCallback(resourceName .. ':server:getFTOCompetencies', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
-    local job = ps.getJobName(src) or 'police'
+    local job = Bridge.getJobName(src) or 'police'
     local ok, rows = pcall(MySQL.query.await, 'SELECT * FROM mdt_fto_competencies WHERE job = ? ORDER BY sort_order ASC', { job })
     return (ok and rows) or {}
 end)
 
 -- Save competencies (replace all for job)
-ps.registerCallback(resourceName .. ':server:saveFTOCompetencies', function(source, competencies)
+Bridge.registerCallback(resourceName .. ':server:saveFTOCompetencies', function(source, competencies)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
-    local job = ps.getJobName(src) or 'police'
+    local job = Bridge.getJobName(src) or 'police'
     competencies = competencies or {}
 
     MySQL.query.await('DELETE FROM mdt_fto_competencies WHERE job = ?', { job })
@@ -58,12 +58,12 @@ ps.registerCallback(resourceName .. ':server:saveFTOCompetencies', function(sour
 end)
 
 -- Get paginated list of FTO assignments
-ps.registerCallback(resourceName .. ':server:getFTOList', function(source, pageNum, filters)
+Bridge.registerCallback(resourceName .. ':server:getFTOList', function(source, pageNum, filters)
     local src = source
     if not CheckAuth(src) then return { entries = {}, hasMore = false } end
 
     filters = filters or {}
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     local hasFTOView = CheckPermission(src, 'fto_view')
 
     local page = tonumber(pageNum) or 1
@@ -117,7 +117,7 @@ ps.registerCallback(resourceName .. ':server:getFTOList', function(source, pageN
 end)
 
 -- Get single FTO assignment with DORs
-ps.registerCallback(resourceName .. ':server:getFTO', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:getFTO', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false } end
 
@@ -132,7 +132,7 @@ ps.registerCallback(resourceName .. ':server:getFTO', function(source, data)
     ]], { assignmentId })
     if not entry then return { success = false, error = 'Not found' } end
 
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     local hasFTOView = CheckPermission(src, 'fto_view')
     if not hasFTOView and entry.trainee_citizenid ~= citizenId and entry.trainer_citizenid ~= citizenId then
         return { success = false, error = 'Unauthorized' }
@@ -162,7 +162,7 @@ ps.registerCallback(resourceName .. ':server:getFTO', function(source, data)
 end)
 
 -- Get officer FTO history (for roster panel)
-ps.registerCallback(resourceName .. ':server:getOfficerFTOHistory', function(source, officerCitizenId)
+Bridge.registerCallback(resourceName .. ':server:getOfficerFTOHistory', function(source, officerCitizenId)
     local src = source
     if not CheckAuth(src) then return {} end
     if not officerCitizenId or officerCitizenId == '' then return {} end
@@ -183,7 +183,7 @@ ps.registerCallback(resourceName .. ':server:getOfficerFTOHistory', function(sou
 end)
 
 -- Create FTO assignment
-ps.registerCallback(resourceName .. ':server:createFTOAssignment', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:createFTOAssignment', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
@@ -218,7 +218,7 @@ ps.registerCallback(resourceName .. ':server:createFTOAssignment', function(sour
 end)
 
 -- Update FTO assignment
-ps.registerCallback(resourceName .. ':server:updateFTOAssignment', function(source, assignmentId, updates)
+Bridge.registerCallback(resourceName .. ':server:updateFTOAssignment', function(source, assignmentId, updates)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
@@ -246,7 +246,7 @@ ps.registerCallback(resourceName .. ':server:updateFTOAssignment', function(sour
 end)
 
 -- Delete FTO assignment
-ps.registerCallback(resourceName .. ':server:deleteFTOAssignment', function(source, assignmentId)
+Bridge.registerCallback(resourceName .. ':server:deleteFTOAssignment', function(source, assignmentId)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
@@ -259,7 +259,7 @@ ps.registerCallback(resourceName .. ':server:deleteFTOAssignment', function(sour
 end)
 
 -- Create DOR (Daily Observation Report)
-ps.registerCallback(resourceName .. ':server:createFTODor', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:createFTODor', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end
@@ -268,7 +268,7 @@ ps.registerCallback(resourceName .. ':server:createFTODor', function(source, dat
     local assignmentId = tonumber(data.assignment_id)
     if not assignmentId then return { success = false, error = 'Assignment is required' } end
 
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     local profile = MySQL.single.await('SELECT fullname FROM mdt_profiles WHERE citizenid = ?', { citizenId })
     local authorName = profile and profile.fullname or 'Unknown'
 
@@ -302,7 +302,7 @@ ps.registerCallback(resourceName .. ':server:createFTODor', function(source, dat
 end)
 
 -- Delete DOR
-ps.registerCallback(resourceName .. ':server:deleteFTODor', function(source, dorId)
+Bridge.registerCallback(resourceName .. ':server:deleteFTODor', function(source, dorId)
     local src = source
     if not CheckAuth(src) then return { success = false } end
     if not CheckPermission(src, 'fto_manage') then return { success = false, error = 'No permission' } end

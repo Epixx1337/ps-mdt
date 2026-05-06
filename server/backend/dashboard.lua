@@ -2,8 +2,8 @@
 local resourceName = tostring(GetCurrentResourceName())
 
 local function getEffectiveJobType(src)
-    local jobType = ps.getJobType(src)
-    local jobName = ps.getJobName(src)
+    local jobType = Bridge.getJobType(src)
+    local jobName = Bridge.getJobName(src)
     if Config.DojJobs then
         for _, name in ipairs(Config.DojJobs) do
             if name == jobName then return 'doj' end
@@ -13,19 +13,19 @@ local function getEffectiveJobType(src)
     return jobType
 end
 
-ps.registerCallback(resourceName .. ':server:getJobData', function(source)
+Bridge.registerCallback(resourceName .. ':server:getJobData', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
-    local jobType = ps.getJobType(src) or 'leo'
+    local jobType = Bridge.getJobType(src) or 'leo'
     local defaultRank = Config.DepartmentLabels and Config.DepartmentLabels[jobType] and Config.DepartmentLabels[jobType].singular or 'Officer'
     local response = {
-        rank = ps.getJobGradeName(src) or defaultRank,
-        payRate = "$" .. (ps.getJobGradePay(src) or 300) .. "/hr",
+        rank = Bridge.getJobGradeName(src) or defaultRank,
+        payRate = "$" .. (Bridge.getJobGradePay(src) or 300) .. "/hr",
     }
     return response
 end)
 
-ps.registerCallback(resourceName .. ':server:getReportStatistics', function(source)
+Bridge.registerCallback(resourceName .. ':server:getReportStatistics', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
     local playerJobType = getEffectiveJobType(src) or 'leo'
@@ -63,10 +63,10 @@ local function parseDateOnly(value)
     return os.time({ year = tonumber(year), month = tonumber(month), day = tonumber(day), hour = 0 })
 end
 
-ps.registerCallback(resourceName .. ':server:getTimeStatistics', function(source)
+Bridge.registerCallback(resourceName .. ':server:getTimeStatistics', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then return {} end
 
     local rows = MySQL.query.await([[
@@ -101,7 +101,7 @@ end)
 
 -- Active warrants handled in server/backend/warrants.lua
 
-ps.registerCallback(resourceName .. ':server:getBulletins', function(source)
+Bridge.registerCallback(resourceName .. ':server:getBulletins', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
     if not CheckAuth(src) then return {} end
@@ -112,7 +112,7 @@ ps.registerCallback(resourceName .. ':server:getBulletins', function(source)
     return rows
 end)
 
-ps.registerCallback(resourceName .. ':server:createBulletin', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createBulletin', function(source, payload)
     local src = source
     assert(src, 'Player ID cannot be nil')
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
@@ -132,7 +132,7 @@ ps.registerCallback(resourceName .. ':server:createBulletin', function(source, p
     return { success = true, id = inserted }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteBulletin', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteBulletin', function(source, payload)
     local src = source
     assert(src, 'Player ID cannot be nil')
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
@@ -148,7 +148,7 @@ ps.registerCallback(resourceName .. ':server:deleteBulletin', function(source, p
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:getRecentReports', function(source, page, limit)
+Bridge.registerCallback(resourceName .. ':server:getRecentReports', function(source, page, limit)
     local src = source
     assert(src, 'Player ID cannot be nil')
     local pageNumber = tonumber(page) or 1
@@ -164,8 +164,8 @@ ps.registerCallback(resourceName .. ':server:getRecentReports', function(source,
         pageSize = 50
     end
 
-    local identifier = ps.getIdentifier(src)
-    local job = ps.getJobName(src)
+    local identifier = Bridge.getIdentifier(src)
+    local job = Bridge.getJobName(src)
     local jobType = getEffectiveJobType(src)
 
     local offset = (pageNumber - 1) * pageSize
@@ -191,7 +191,7 @@ ps.registerCallback(resourceName .. ':server:getRecentReports', function(source,
     return rows or {}
 end)
 
-ps.registerCallback(resourceName .. ':server:getActiveBolos', function(source)
+Bridge.registerCallback(resourceName .. ':server:getActiveBolos', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
     if not CheckAuth(src) then return {} end
@@ -201,27 +201,27 @@ ps.registerCallback(resourceName .. ':server:getActiveBolos', function(source)
         local formattedBolo = {
             id = v.id,
             reportId = v.reportId and tostring(v.reportId) or 'N/A',
-            name = v.subject_name or ps.getPlayerNameByIdentifier(v.subject_id) or 'Unknown',
+            name = v.subject_name or Bridge.getPlayerNameByIdentifier(v.subject_id) or 'Unknown',
             type = v.type,
             notes = v.notes or '',
             status = v.status,
         }
         table.insert(result, formattedBolo)
     end
-    ps.debug('Fetched ' .. #result .. ' active BOLOs from database for source ' .. src, result)
+    Bridge.debug('Fetched ' .. #result .. ' active BOLOs from database for source ' .. src, result)
     return result
 end)
 
-ps.registerCallback(resourceName .. ':server:getActiveUnits', function(source)
+Bridge.registerCallback(resourceName .. ':server:getActiveUnits', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
-    local playerJobType = ps.getJobType(src) or 'leo'
+    local playerJobType = Bridge.getJobType(src) or 'leo'
     return Cache.getOrSet('dashboard:activeUnits:' .. playerJobType, Config.CacheTTL and Config.CacheTTL.ActiveUnits or 10, function()
-        return { count = ps.getJobTypeCount(playerJobType) }
+        return { count = Bridge.getJobTypeCount(playerJobType) }
     end)
 end)
 
--- Sanitize dispatch data for safe serialization through ps.callback
+-- Sanitize dispatch data for safe serialization through Bridge.callback
 -- ps-dispatch objects contain vectors/coords that msgpack can't serialize
 local function sanitizeDispatch(call)
     if not call or type(call) ~= 'table' then return nil end
@@ -281,7 +281,7 @@ local function sanitizeDispatch(call)
     return sanitized
 end
 
-ps.registerCallback(resourceName .. ':server:getRecentDispatches', function(source)
+Bridge.registerCallback(resourceName .. ':server:getRecentDispatches', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
     local dispatchResource = Config and Config.Dispatch and Config.Dispatch.Resource or 'ps-dispatch'
@@ -294,8 +294,8 @@ ps.registerCallback(resourceName .. ':server:getRecentDispatches', function(sour
     -- Filter by job if configured
     local dispatches = recentDispatches
     if Config and Config.Dispatch and Config.Dispatch.FilterByJob == true then
-        local jobName = ps.getJobName(src)
-        local jobType = ps.getJobType and ps.getJobType(src) or nil
+        local jobName = Bridge.getJobName(src)
+        local jobType = Bridge.getJobType and Bridge.getJobType(src) or nil
         if jobName then
             local filtered = {}
             for _, call in ipairs(recentDispatches) do
@@ -330,7 +330,7 @@ ps.registerCallback(resourceName .. ':server:getRecentDispatches', function(sour
     return result
 end)
 
-ps.registerCallback(resourceName .. ':server:getUsageMetrics', function(source)
+Bridge.registerCallback(resourceName .. ':server:getUsageMetrics', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 

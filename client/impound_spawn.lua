@@ -51,15 +51,15 @@ end
 local function TakeOutImpound(data, garageIndex)
     local coords = ImpoundLocations[garageIndex]
     if not coords then
-        ps.notify('Invalid impound location', 'error')
+        Bridge.notify('Invalid impound location', 'error')
         return
     end
 
-    Framework.SpawnVehicle(data.vehicle, function(veh)
+    Bridge.SpawnVehicle(data.vehicle, function(veh)
         -- Apply stored vehicle properties
         local function applyAndFinish(properties)
             if properties then
-                Framework.SetVehicleProperties(veh, properties)
+                Bridge.SetVehicleProperties(veh, properties)
             end
             SetVehicleNumberPlateText(veh, data.plate)
             SetEntityHeading(veh, coords.w or 0.0)
@@ -89,7 +89,7 @@ local function TakeOutImpound(data, garageIndex)
 
             -- Give keys to owner
             pcall(function()
-                TriggerEvent('vehiclekeys:client:SetOwner', Framework.GetPlate(veh))
+                TriggerEvent('vehiclekeys:client:SetOwner', Bridge.GetPlate(veh))
             end)
 
             SetVehicleEngineOn(veh, true, true)
@@ -100,7 +100,7 @@ local function TakeOutImpound(data, garageIndex)
             applyAndFinish(data.props)
         else
             -- Fallback: fetch from garage callback (legacy support)
-            Framework.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
+            Bridge.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
                 applyAndFinish(properties)
             end, data.plate)
         end
@@ -116,7 +116,7 @@ RegisterNetEvent(resourceName .. ':client:TakeOutImpound', function(data)
     local impoundCoords = ImpoundLocations[garageIndex]
 
     if not impoundCoords then
-        ps.notify('Invalid impound location', 'error')
+        Bridge.notify('Invalid impound location', 'error')
         return
     end
 
@@ -124,7 +124,7 @@ RegisterNetEvent(resourceName .. ':client:TakeOutImpound', function(data)
     if #(pos - takeDist) <= 15.0 then
         TakeOutImpound(data, garageIndex)
     else
-        ps.notify('You are too far away from the impound location!', 'error')
+        Bridge.notify('You are too far away from the impound location!', 'error')
     end
 end)
 

@@ -6,11 +6,11 @@ local function buildComplaintNumber(id)
 end
 
 -- Submit a complaint (NO CheckAuth -- civilians can submit)
-ps.registerCallback(resourceName .. ':server:submitComplaint', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:submitComplaint', function(source, data)
     local src = source
     data = data or {}
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then
         return { success = false, error = 'Missing citizen id' }
     end
@@ -74,7 +74,7 @@ ps.registerCallback(resourceName .. ':server:submitComplaint', function(source, 
 end)
 
 -- Get paginated list of IA complaints
-ps.registerCallback(resourceName .. ':server:getIAComplaints', function(source, pageNum, filters)
+Bridge.registerCallback(resourceName .. ':server:getIAComplaints', function(source, pageNum, filters)
     local src = source
     filters = filters or {}
     print(('[ps-mdt] getIAComplaints called | page=%s | status=[%s] | search=[%s]'):format(
@@ -150,7 +150,7 @@ ps.registerCallback(resourceName .. ':server:getIAComplaints', function(source, 
 end)
 
 -- Get single IA complaint with notes
-ps.registerCallback(resourceName .. ':server:getIAComplaint', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:getIAComplaint', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -181,7 +181,7 @@ ps.registerCallback(resourceName .. ':server:getIAComplaint', function(source, d
 end)
 
 -- Get IA complaints against a specific officer (by name match)
-ps.registerCallback(resourceName .. ':server:getIAHistoryForOfficer', function(source, officerName)
+Bridge.registerCallback(resourceName .. ':server:getIAHistoryForOfficer', function(source, officerName)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -200,7 +200,7 @@ ps.registerCallback(resourceName .. ':server:getIAHistoryForOfficer', function(s
 end)
 
 -- Update IA complaint details (officer, badge, date, location)
-ps.registerCallback(resourceName .. ':server:updateIAComplaintInfo', function(source, complaintId, updates)
+Bridge.registerCallback(resourceName .. ':server:updateIAComplaintInfo', function(source, complaintId, updates)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -240,7 +240,7 @@ ps.registerCallback(resourceName .. ':server:updateIAComplaintInfo', function(so
 end)
 
 -- Update IA complaint status
-ps.registerCallback(resourceName .. ':server:updateIAStatus', function(source, complaintId, status)
+Bridge.registerCallback(resourceName .. ':server:updateIAStatus', function(source, complaintId, status)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -251,7 +251,7 @@ ps.registerCallback(resourceName .. ':server:updateIAStatus', function(source, c
 
     local ok, err = pcall(MySQL.update.await, 'UPDATE mdt_ia_complaints SET status = ? WHERE id = ?', { status, complaintId })
     if not ok then
-        ps.warn('[updateIAStatus] Failed: ' .. tostring(err))
+        Bridge.warn('[updateIAStatus] Failed: ' .. tostring(err))
         return { success = false, error = 'Failed to update status: ' .. tostring(err) }
     end
 
@@ -259,7 +259,7 @@ ps.registerCallback(resourceName .. ':server:updateIAStatus', function(source, c
 end)
 
 -- Assign an investigator to an IA complaint (or unassign with '__unassign__')
-ps.registerCallback(resourceName .. ':server:assignIAComplaint', function(source, complaintId, assigneeCitizenId)
+Bridge.registerCallback(resourceName .. ':server:assignIAComplaint', function(source, complaintId, assigneeCitizenId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -287,7 +287,7 @@ ps.registerCallback(resourceName .. ':server:assignIAComplaint', function(source
 end)
 
 -- Add a note to an IA complaint
-ps.registerCallback(resourceName .. ':server:addIANote', function(source, complaintId, content)
+Bridge.registerCallback(resourceName .. ':server:addIANote', function(source, complaintId, content)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -296,7 +296,7 @@ ps.registerCallback(resourceName .. ':server:addIANote', function(source, compla
         return { success = false, error = 'Invalid complaint or empty note' }
     end
 
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     local profile = MySQL.single.await('SELECT fullname FROM mdt_profiles WHERE citizenid = ?', { citizenId })
     local authorName = profile and profile.fullname or 'Unknown'
 
@@ -309,7 +309,7 @@ ps.registerCallback(resourceName .. ':server:addIANote', function(source, compla
 end)
 
 -- Delete a note from an IA complaint
-ps.registerCallback(resourceName .. ':server:deleteIANote', function(source, noteId, complaintId)
+Bridge.registerCallback(resourceName .. ':server:deleteIANote', function(source, noteId, complaintId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 

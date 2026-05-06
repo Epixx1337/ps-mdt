@@ -20,7 +20,7 @@ RegisterNUICallback('submitComplaint', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:submitComplaint', data)
+    local result = Bridge.callback(resourceName .. ':server:submitComplaint', data)
     cb(result or { success = false })
 end)
 
@@ -42,7 +42,7 @@ RegisterNUICallback('getIAComplaints', function(data, cb)
         status = data.status or nil,
         search = data.search or nil,
     }
-    local result = ps.callback(resourceName .. ':server:getIAComplaints', page, filters)
+    local result = Bridge.callback(resourceName .. ':server:getIAComplaints', page, filters)
     cb(result or { complaints = {}, hasMore = false })
 end)
 
@@ -57,7 +57,7 @@ RegisterNUICallback('getIAComplaint', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getIAComplaint', data.id)
+    local result = Bridge.callback(resourceName .. ':server:getIAComplaint', data.id)
     cb(result or { success = false })
 end)
 
@@ -67,7 +67,7 @@ RegisterNUICallback('getIAHistoryForOfficer', function(data, cb)
         cb({})
         return
     end
-    local result = ps.callback(resourceName .. ':server:getIAHistoryForOfficer', data.officerName)
+    local result = Bridge.callback(resourceName .. ':server:getIAHistoryForOfficer', data.officerName)
     cb(result or {})
 end)
 
@@ -77,7 +77,7 @@ RegisterNUICallback('updateIAComplaintInfo', function(data, cb)
         cb({ success = false, message = 'Missing complaint ID' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateIAComplaintInfo', data.id, {
+    local result = Bridge.callback(resourceName .. ':server:updateIAComplaintInfo', data.id, {
         officer_name = data.officer_name,
         officer_badge = data.officer_badge,
         incident_date = data.incident_date,
@@ -97,7 +97,7 @@ RegisterNUICallback('updateIAStatus', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateIAStatus', data.id, data.status)
+    local result = Bridge.callback(resourceName .. ':server:updateIAStatus', data.id, data.status)
     cb(result or { success = false })
 end)
 
@@ -112,7 +112,7 @@ RegisterNUICallback('assignIAComplaint', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:assignIAComplaint', data.id, data.citizenid)
+    local result = Bridge.callback(resourceName .. ':server:assignIAComplaint', data.id, data.citizenid)
     cb(result or { success = false })
 end)
 
@@ -124,7 +124,7 @@ RegisterNUICallback('addIANote', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:addIANote', data.complaintId, data.content)
+    local result = Bridge.callback(resourceName .. ':server:addIANote', data.complaintId, data.content)
     cb(result or { success = false })
 end)
 
@@ -136,6 +136,6 @@ RegisterNUICallback('deleteIANote', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:deleteIANote', data.noteId, data.complaintId)
+    local result = Bridge.callback(resourceName .. ':server:deleteIANote', data.noteId, data.complaintId)
     cb(result or { success = false })
 end)

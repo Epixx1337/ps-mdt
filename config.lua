@@ -1,5 +1,4 @@
 Config = {}
-ps = exports.ps_lib:init()
 
 -- Basic Settings
 Config.Debug = false -- Enable/disable debug mode (boolean)
@@ -291,13 +290,9 @@ Config.ManagementPermissions = {
     'management_activity',
 }
 
--- Bodycam Settings (override defaults if needed, remove to use built-in defaults)
+-- Bodycam Settings
 Config.Bodycam = {
-    DutyEvent = 'QBCore:Server:OnJobUpdate',
-    DutyEventMode = 'auto',  -- 'auto' | 'qbcore' | 'pslib' (auto detects qb-core or qbx_core)
-    MultiJobDutyEvent = 'ps-multijob:server:dutyChanged',
-    DutyResource = 'auto',   -- 'auto' | 'qb-core' | 'qbx_core' (auto detects which framework is running)
-    MultiJobResource = 'ps-multijob',
+    DutyEvent = 'QBCore:Server:OnJobUpdate',  -- fired by both qb-core and qbx_core on duty/job change
 }
 
 -- Optional defaults for role permissions by job/grade

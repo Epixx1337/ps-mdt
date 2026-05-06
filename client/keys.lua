@@ -19,7 +19,7 @@ local RegisterNUICallback = RegisterNUICallback
 
 -- Check Job Authorization (returns true, false, or { isCivilian = true })
 function CheckAuth()
-    local result = ps.callback(resourceName..':server:checkAuth')
+    local result = Bridge.callback(resourceName..':server:checkAuth')
     if type(result) == 'table' and result.isCivilian then
         return result
     end
@@ -119,37 +119,37 @@ function OpenMDT(skipItemCheck)
         elseif GetResourceState('qb-inventory') == 'started' then
             hasItem = exports['qb-inventory']:HasItem(itemName)
         else
-            hasItem = ps.callback(resourceName .. ':server:hasItem', itemName)
+            hasItem = Bridge.callback(resourceName .. ':server:hasItem', itemName)
         end
 
         if not hasItem then
-            ps.notify('You need a ' .. itemName .. ' to access the MDT', 'error')
+            Bridge.notify('You need a ' .. itemName .. ' to access the MDT', 'error')
             return
         end
     end
 
     -- Don't allow if player is dead
-    if ps.isDead() then
-        ps.notify('You cannot open the MDT right now', 'error')
+    if Bridge.isDead() then
+        Bridge.notify('You cannot open the MDT right now', 'error')
         return
     end
 
     -- Don't allow if swimming
     local ped = PlayerPedId()
     if IsPedSwimming(ped) then
-        ps.notify('You cannot open the MDT right now', 'error')
+        Bridge.notify('You cannot open the MDT right now', 'error')
         return
     end
 
     -- Don't allow if armed (skip for civilians)
     if not isCivilian and (IsPedArmed(ped, 1) or IsPedArmed(ped, 2) or IsPedArmed(ped, 4)) then
-        ps.notify('You cannot open the MDT right now', 'error')
+        Bridge.notify('You cannot open the MDT right now', 'error')
         return
     end
 
     -- Don't allow if viewing a camera
     if not isCivilian and exports[resourceName]:isViewingCamera() then
-        ps.notify('You cannot open the MDT while viewing a camera', 'error')
+        Bridge.notify('You cannot open the MDT while viewing a camera', 'error')
         return
     end
 
@@ -170,7 +170,7 @@ function OpenMDT(skipItemCheck)
 
     if isCivilian then
         -- Civilian mode: send auth with civilian flag
-        local playerData = ps.getPlayerData()
+        local playerData = Bridge.getPlayerData()
         SendNUI('updateAuth', {
             authorized = true,
             playerData = playerData,
@@ -213,7 +213,7 @@ function CloseMDT()
             end)
         end
 
-        ps.debug('MDT closed via CloseMDT function')
+        Bridge.debug('MDT closed via CloseMDT function')
         TriggerServerEvent('ps-mdt:server:trackLogout')
     end
 end
@@ -236,8 +236,8 @@ end)
 
 -- Key to open MDT
 if not Config.Keys.OpenMDT.enabled then
-    ps.debug('MDT Open Keybind Disabled')
+    Bridge.debug('MDT Open Keybind Disabled')
 else
-    ps.debug('MDT Open Keybind Enabled: ' .. Config.Keys.OpenMDT.key)
-    ps.addKeybind(Config.Keys.OpenMDT.key, Config.Commands.Open.command)
+    Bridge.debug('MDT Open Keybind Enabled: ' .. Config.Keys.OpenMDT.key)
+    Bridge.addKeybind(Config.Keys.OpenMDT.key, Config.Commands.Open.command)
 end

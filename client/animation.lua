@@ -73,15 +73,15 @@ local function CreateTabletProp()
     local coords = GetEntityCoords(ped)
     local propHash = GetHashKey(propModel)
 
-    if not ps.requestModel(propModel) then
-        ps.warn('Failed to load tablet prop model')
+    if not Bridge.requestModel(propModel) then
+        Bridge.warn('Failed to load tablet prop model')
         return false
     end
 
     tabletProp = CreateObject(propHash, coords.x, coords.y, coords.z + 0.2, true, true, true)
 
     if not DoesEntityExist(tabletProp) then
-        ps.warn('Failed to create tablet prop')
+        Bridge.warn('Failed to create tablet prop')
         SetModelAsNoLongerNeeded(propHash)
         return false
     end
@@ -109,7 +109,7 @@ local function CreateTabletProp()
     -- Clean up model from memory
     SetModelAsNoLongerNeeded(propHash)
 
-    ps.debug('Tablet prop created and attached')
+    Bridge.debug('Tablet prop created and attached')
     return true
 end
 
@@ -118,7 +118,7 @@ local function DestroyTabletProp()
     if tabletProp and DoesEntityExist(tabletProp) then
         DeleteEntity(tabletProp)
         tabletProp = nil
-        ps.debug('Tablet prop destroyed')
+        Bridge.debug('Tablet prop destroyed')
     end
 end
 
@@ -132,8 +132,8 @@ function PlayTabletAnimation()
 
     local ped = getPed()
 
-    if not ps.requestAnim(animDict) then
-        ps.debug('Failed to load tablet animation dictionary')
+    if not Bridge.requestAnim(animDict) then
+        Bridge.debug('Failed to load tablet animation dictionary')
         return
     end
 
@@ -162,7 +162,7 @@ function PlayTabletAnimation()
 
     RemoveAnimDict(animDict)
     isPlayingTabletAnim = true
-    ps.debug('Tablet animation started')
+    Bridge.debug('Tablet animation started')
     StartAnimationMonitoring()
 end
 
@@ -175,7 +175,7 @@ function StopTabletAnimation()
     DestroyTabletProp()
 
     isPlayingTabletAnim = false
-    ps.debug('Tablet animation stopped')
+    Bridge.debug('Tablet animation stopped')
 end
 
 -- Check if tablet animation is playing
@@ -189,8 +189,8 @@ function RestartTabletAnimation()
 
     local ped = getPed()
 
-    if not ps.requestAnim(animDict) then
-        ps.debug('Failed to load tablet animation dictionary for restart')
+    if not Bridge.requestAnim(animDict) then
+        Bridge.debug('Failed to load tablet animation dictionary for restart')
         return
     end
 

@@ -47,8 +47,8 @@ function SendNUI(action, data)
         })
     end
     if safeData then
-        ps.debug(('NUI Message Sent: %s with data: %s'):format(action, json.encode(safeData)))
+        Bridge.debug(('NUI Message Sent: %s with data: %s'):format(action, json.encode(safeData)))
     else
-        ps.debug(('NUI Message Sent: %s'):format(action))
+        Bridge.debug(('NUI Message Sent: %s'):format(action))
     end
 end

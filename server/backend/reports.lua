@@ -1,8 +1,8 @@
 local resourceName = tostring(GetCurrentResourceName())
 
 local function getEffectiveJobType(src)
-    local jobType = ps.getJobType(src)
-    local jobName = ps.getJobName(src)
+    local jobType = Bridge.getJobType(src)
+    local jobName = Bridge.getJobName(src)
     if Config.DojJobs then
         for _, name in ipairs(Config.DojJobs) do
             if name == jobName then return 'doj' end
@@ -39,8 +39,8 @@ local function checkReportAccess(src, reportId)
         return false
     end
 
-    local identifier = ps.getIdentifier(src)
-    local job = ps.getJobName(src)
+    local identifier = Bridge.getIdentifier(src)
+    local job = Bridge.getJobName(src)
     local jobType = getEffectiveJobType(src)
 
     if not identifier then
@@ -73,7 +73,7 @@ local function buildFullName(firstname, lastname, citizenid)
     if full ~= '' then
         return full
     end
-    return ps.getPlayerNameByIdentifier(citizenid) or 'Unknown'
+    return Bridge.getPlayerNameByIdentifier(citizenid) or 'Unknown'
 end
 
 
@@ -203,12 +203,12 @@ local function buildReportAccessClause()
 end
 
 
-ps.registerCallback(resourceName .. ':server:getReports', function(source, page, filters)
+Bridge.registerCallback(resourceName .. ':server:getReports', function(source, page, filters)
 	local src = source
 	if not CheckAuth(src) then return end
 
-    local identifier = ps.getIdentifier(src)
-    local job = ps.getJobName(src)
+    local identifier = Bridge.getIdentifier(src)
+    local job = Bridge.getJobName(src)
     local jobType = getEffectiveJobType(src)
 
 	local pageNumber = tonumber(page) or 1
@@ -254,12 +254,12 @@ ps.registerCallback(resourceName .. ':server:getReports', function(source, page,
 	return reports
 end)
 
-ps.registerCallback(resourceName..':server:getReport', function(source, reportid)
+Bridge.registerCallback(resourceName..':server:getReport', function(source, reportid)
     local src = source
 	if not CheckAuth(src) then return end
 
-	local identifier = ps.getIdentifier(src)
-    local job = ps.getJobName(src)
+	local identifier = Bridge.getIdentifier(src)
+    local job = Bridge.getJobName(src)
     local jobType = getEffectiveJobType(src)
 
     local result = MySQL.query.await([[
@@ -382,13 +382,13 @@ ps.registerCallback(resourceName..':server:getReport', function(source, reportid
     end)
 
     if not enrichOk then
-        ps.warn(('[getReport] Failed to enrich involved data: %s'):format(tostring(enrichErr)))
+        Bridge.warn(('[getReport] Failed to enrich involved data: %s'):format(tostring(enrichErr)))
     end
 
     return report
 end)
 
-ps.registerCallback(resourceName .. ':server:searchPlayers', function(source, query)
+Bridge.registerCallback(resourceName .. ':server:searchPlayers', function(source, query)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -396,8 +396,8 @@ ps.registerCallback(resourceName .. ':server:searchPlayers', function(source, qu
         return {}
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'search_players', 'search', nil, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'search_players', 'search', nil, {
             query = query
         })
     end
@@ -442,7 +442,7 @@ ps.registerCallback(resourceName .. ':server:searchPlayers', function(source, qu
     return results
 end)
 
-ps.registerCallback(resourceName .. ':server:searchOfficers', function(source, query)
+Bridge.registerCallback(resourceName .. ':server:searchOfficers', function(source, query)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -455,8 +455,8 @@ ps.registerCallback(resourceName .. ':server:searchOfficers', function(source, q
         return {}
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'search_officers', 'search', nil, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'search_officers', 'search', nil, {
             query = query
         })
     end
@@ -505,7 +505,7 @@ ps.registerCallback(resourceName .. ':server:searchOfficers', function(source, q
     return results
 end)
 
-ps.registerCallback(resourceName .. ':server:searchVehiclesForReport', function(source, query)
+Bridge.registerCallback(resourceName .. ':server:searchVehiclesForReport', function(source, query)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -540,7 +540,7 @@ ps.registerCallback(resourceName .. ':server:searchVehiclesForReport', function(
 
     local results = {}
     for _, row in ipairs(rows or {}) do
-        local vehicleData = Framework and Framework.GetVehicleByModel(row.vehicle) or nil
+        local vehicleData = Bridge and Bridge.GetVehicleByModel(row.vehicle) or nil
 
         table.insert(results, {
             plate = row.plate and string.upper(row.plate) or 'UNKNOWN',
@@ -553,32 +553,32 @@ ps.registerCallback(resourceName .. ':server:searchVehiclesForReport', function(
     return results
 end)
 
-ps.registerCallback(resourceName..':server:saveReport', function(source, reportData)
+Bridge.registerCallback(resourceName..':server:saveReport', function(source, reportData)
     local src = source
     if not CheckAuth(src) then return end
 
-    local identifier = ps.getIdentifier(src)
-    local playerName = ps.getPlayerName(src)
-    local callsign = ps.getMetadata(src, 'callsign')
+    local identifier = Bridge.getIdentifier(src)
+    local playerName = Bridge.getPlayerName(src)
+    local callsign = Bridge.getMetadata(src, 'callsign')
 
     local title = reportData.report and reportData.report.title
     if not title or title == "" then
-        ps.notify(src, 'Failed to save Report: Needs a title', 'error')
-        ps.warn('Report with missing/empty title from player: ' .. src .. ' Name: ' .. playerName)
+        Bridge.notify(src, 'Failed to save Report: Needs a title', 'error')
+        Bridge.warn('Report with missing/empty title from player: ' .. src .. ' Name: ' .. playerName)
         return { success = false, error = 'Report needs a title' }
     end
 
     local content = reportData.report and reportData.report.content
     if not content or content == "" then
-        ps.notify(src, 'Failed to save Report: Needs content', 'error')
-        ps.warn('Report with missing/empty content from player: ' .. src .. ' Name: ' .. playerName)
+        Bridge.notify(src, 'Failed to save Report: Needs content', 'error')
+        Bridge.warn('Report with missing/empty content from player: ' .. src .. ' Name: ' .. playerName)
         return { success = false, error = 'Report needs content' }
     end
 
     -- Tags are required
     local tags = reportData.tags
     if not tags or type(tags) ~= 'table' or #tags == 0 then
-        ps.notify(src, 'Failed to save Report: At least one tag is required', 'error')
+        Bridge.notify(src, 'Failed to save Report: At least one tag is required', 'error')
         return { success = false, message = 'At least one tag is required' }
     end
 
@@ -593,15 +593,15 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
             -- may be offline or from a different framework. The report can still
             -- reference them by citizenid and the profile will be created when
             -- they are next looked up.
-            ps.warn(('[Profile Auto-Create Skipped] Player [%s] %s saving report with citizen %s who has no profile yet')
+            Bridge.warn(('[Profile Auto-Create Skipped] Player [%s] %s saving report with citizen %s who has no profile yet')
                 :format(src, playerName, citizenid))
         end
     end
 
     if reportId then
         if not checkReportAccess(src, reportId) then
-            ps.notify(src, 'Failed to save Report: Not found or no access', 'error')
-            ps.warn(('[Failed to save] Player [%s] %s tried to save a report (%s), but it was not found or they do not have access.')
+            Bridge.notify(src, 'Failed to save Report: Not found or no access', 'error')
+            Bridge.warn(('[Failed to save] Player [%s] %s tried to save a report (%s), but it was not found or they do not have access.')
                 :format(src, playerName, reportId))
             return { success = false, error = "Report not found or access denied" }
         end
@@ -621,8 +621,8 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
         })
 
         if not insertResult then
-            ps.notify(src, 'Failed to save Report', 'error')
-            ps.warn(('[Failed to save] Player [%s] %s tried to save a report (new). Insert failed.')
+            Bridge.notify(src, 'Failed to save Report', 'error')
+            Bridge.warn(('[Failed to save] Player [%s] %s tried to save a report (new). Insert failed.')
                 :format(src, playerName))
             return { success = false, error = 'Failed to insert report' }
         end
@@ -643,8 +643,8 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
         })
 
         if not updateSuccess or updateSuccess == 0 then
-            ps.notify(src, 'Failed to save Report', 'error')
-            ps.warn(('[Failed to save] Player [%s] %s tried to save a report (%s). Update failed.')
+            Bridge.notify(src, 'Failed to save Report', 'error')
+            Bridge.warn(('[Failed to save] Player [%s] %s tried to save a report (%s). Update failed.')
                 :format(src, playerName, reportId))
             return { success = false, error = 'Failed to update report' }
         end
@@ -663,7 +663,7 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
             return MySQL.transaction.await(cleanupQueries)
         end)
         if not cleanupOk then
-            ps.warn(('[Cleanup Transaction Error] Report %s: %s'):format(reportId, tostring(cleanupErr)))
+            Bridge.warn(('[Cleanup Transaction Error] Report %s: %s'):format(reportId, tostring(cleanupErr)))
             return { success = false, error = "Failed to clean up old report data: " .. tostring(cleanupErr) }
         end
     end
@@ -712,7 +712,7 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
     end
 
     -- Auto-add jobtype restriction so reports are only visible to the same job type
-    local creatorJobType = ps.getJobType(src)
+    local creatorJobType = Bridge.getJobType(src)
     if creatorJobType then
         table.insert(attachmentQueries, {
             query = "INSERT INTO mdt_reports_restrictions (reportid, type, identifier) VALUES (?, ?, ?)",
@@ -743,13 +743,13 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
             return MySQL.transaction.await(attachmentQueries)
         end)
         if not attachOk then
-            ps.warn(('[Attachment Transaction Error] Report %s: %s'):format(reportId, tostring(attachErr)))
+            Bridge.warn(('[Attachment Transaction Error] Report %s: %s'):format(reportId, tostring(attachErr)))
             return { success = false, error = "Failed to save report attachments: " .. tostring(attachErr) }
         end
     end
 
     if reportId and reportType == 'Arrest Report' and reportData.involved and #reportData.involved > 0 then
-        local officerId = ps.getIdentifier(src)
+        local officerId = Bridge.getIdentifier(src)
         local officerName = (callsign or '') .. ' ' .. (playerName or '')
         officerName = officerName:gsub('^%s+', ''):gsub('%s+$', '')
         local arrestQueries = {}
@@ -766,10 +766,10 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
         end
         if #arrestQueries > 0 then
             MySQL.transaction.await(arrestQueries)
-            if ps.auditLog then
+            if Bridge.auditLog then
                 for _, involved in ipairs(reportData.involved) do
                     if involved.type == 'suspect' and involved.citizenid then
-                        ps.auditLog(src, 'arrest_logged', 'arrest', reportId, {
+                        Bridge.auditLog(src, 'arrest_logged', 'arrest', reportId, {
                             citizenid = involved.citizenid,
                             reportId = reportId
                         })
@@ -797,9 +797,9 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
 
     Cache.invalidatePrefix('reports:analytics:')
 
-    if ps.auditLog then
+    if Bridge.auditLog then
         local action = reportId and reportData.report and reportData.report.id and 'report_updated' or 'report_created'
-        ps.auditLog(src, action, 'report', reportId, {
+        Bridge.auditLog(src, action, 'report', reportId, {
             title = title,
             type = reportType
         })
@@ -814,7 +814,7 @@ ps.registerCallback(resourceName..':server:saveReport', function(source, reportD
     }
 end)
 
-ps.registerCallback(resourceName..':server:updateReportContent', function(source, reportid, content, reportData)
+Bridge.registerCallback(resourceName..':server:updateReportContent', function(source, reportid, content, reportData)
     local src = source
     if not CheckAuth(src) then return { success = false, error = "Unauthorized" } end
 
@@ -826,9 +826,9 @@ ps.registerCallback(resourceName..':server:updateReportContent', function(source
     local title = (reportData and reportData.title) or "Draft Report"
     local reportType = (reportData and reportData.type) or "Incident Report"
 
-    local identifier = ps.getIdentifier(src)
-    local playerName = ps.getPlayerName(src)
-    local callsign = ps.getMetadata(src, 'callsign')
+    local identifier = Bridge.getIdentifier(src)
+    local playerName = Bridge.getPlayerName(src)
+    local callsign = Bridge.getMetadata(src, 'callsign')
 
     if not identifier then return { success = false, error = "Player not found" } end
 
@@ -885,7 +885,7 @@ ps.registerCallback(resourceName..':server:updateReportContent', function(source
     return { success = false, error = "Failed to save content" }
 end)
 
-ps.registerCallback(resourceName..':server:deleteReport', function(source, reportId)
+Bridge.registerCallback(resourceName..':server:deleteReport', function(source, reportId)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -894,11 +894,11 @@ ps.registerCallback(resourceName..':server:deleteReport', function(source, repor
         return { success = false, error = "Missing/Invalid report ID" }
     end
 
-    local playerName = ps.getPlayerName(src)
+    local playerName = Bridge.getPlayerName(src)
 
     if not checkReportAccess(src, reportId) then
-        ps.notify(src, 'Failed to delete Report: Not found or no access', 'error')
-        ps.warn(('[Failed to delete] Player [%s] %s tried to delete a report (%s), but it was not found or they do not have access.')
+        Bridge.notify(src, 'Failed to delete Report: Not found or no access', 'error')
+        Bridge.warn(('[Failed to delete] Player [%s] %s tried to delete a report (%s), but it was not found or they do not have access.')
             :format(src, playerName, reportId))
         return { success = false, error = "Report not found or access denied" }
     end
@@ -911,12 +911,12 @@ ps.registerCallback(resourceName..':server:deleteReport', function(source, repor
     if success then
         Cache.invalidate('dashboard:reportStats')
         Cache.invalidate('dashboard:usageMetrics')
-        ps.notify(src, 'Report deleted successfully', 'success')
-        ps.debug(('[Report Deleted] Player [%s] %s successfully deleted report (%s): "%s"')
+        Bridge.notify(src, 'Report deleted successfully', 'success')
+        Bridge.debug(('[Report Deleted] Player [%s] %s successfully deleted report (%s): "%s"')
             :format(src, playerName, reportId, reportTitle))
 
-        if ps.auditLog then
-            ps.auditLog(src, 'report_deleted', 'report', reportId, {
+        if Bridge.auditLog then
+            Bridge.auditLog(src, 'report_deleted', 'report', reportId, {
                 title = reportTitle
             })
         end
@@ -927,8 +927,8 @@ ps.registerCallback(resourceName..':server:deleteReport', function(source, repor
             reportId = reportId
         }
     else
-        ps.notify(src, 'Failed to delete report', 'error')
-        ps.warn(('[Failed to delete] Player [%s] %s tried to delete report (%s). Database query failed.')
+        Bridge.notify(src, 'Failed to delete report', 'error')
+        Bridge.warn(('[Failed to delete] Player [%s] %s tried to delete report (%s). Database query failed.')
             :format(src, playerName, reportId))
 
         return {
@@ -938,7 +938,7 @@ ps.registerCallback(resourceName..':server:deleteReport', function(source, repor
     end
 end)
 
-ps.registerCallback(resourceName..':server:getAvailableTags', function(source, playerJobType)
+Bridge.registerCallback(resourceName..':server:getAvailableTags', function(source, playerJobType)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -957,7 +957,7 @@ ps.registerCallback(resourceName..':server:getAvailableTags', function(source, p
     return tags or {}
 end)
 
-ps.registerCallback(resourceName..':server:generateReportId', function(source)
+Bridge.registerCallback(resourceName..':server:generateReportId', function(source)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -967,12 +967,12 @@ ps.registerCallback(resourceName..':server:generateReportId', function(source)
     }
 end)
 
-ps.registerCallback(resourceName..':server:getReportAnalytics', function(source, filters)
+Bridge.registerCallback(resourceName..':server:getReportAnalytics', function(source, filters)
     local src = source
     if not CheckAuth(src) then return { success = false, error = "Unauthorized" } end
 
-    local identifier = ps.getIdentifier(src)
-    local job = ps.getJobName(src)
+    local identifier = Bridge.getIdentifier(src)
+    local job = Bridge.getJobName(src)
     local jobType = getEffectiveJobType(src)
 
     local filterClause, filterValues = buildReportFilterClause(filters)
@@ -1048,7 +1048,7 @@ ps.registerCallback(resourceName..':server:getReportAnalytics', function(source,
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:getReportsByPlate', function(source, plate)
+Bridge.registerCallback(resourceName .. ':server:getReportsByPlate', function(source, plate)
     local src = source
     if not CheckAuth(src) then return {} end
 

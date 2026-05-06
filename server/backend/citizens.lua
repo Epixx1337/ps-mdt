@@ -121,14 +121,14 @@ end
 local function safeQuery(query, params)
     local ok, rows = pcall(MySQL.query.await, query, params)
     if not ok then
-        ps.warn('[getCitizens] Query failed (table may not exist): ' .. tostring(rows))
+        Bridge.warn('[getCitizens] Query failed (table may not exist): ' .. tostring(rows))
         return {}
     end
     return rows or {}
 end
 
 -- getCitizens - pulls citizens from database with pagination support
-ps.registerCallback(resourceName .. ':server:getCitizens', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:getCitizens', function(source, payload)
     local src = source
     local page = type(payload) == 'table' and payload.page or payload or 1
     page = tonumber(page) or 1
@@ -175,7 +175,7 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, payl
     -- Wrap flags in pcall since it queries mdt_reports_warrants / mdt_bolos which may not exist
     local ok, flagsByCid = pcall(collectCitizenFlags, citizenids)
     if not ok then
-        ps.warn('[getCitizens] collectCitizenFlags failed: ' .. tostring(flagsByCid))
+        Bridge.warn('[getCitizens] collectCitizenFlags failed: ' .. tostring(flagsByCid))
         flagsByCid = {}
     end
 
@@ -234,7 +234,7 @@ ps.registerCallback(resourceName .. ':server:getCitizens', function(source, payl
     end
     local endTime = os.clock()
     local elapsedTime = (endTime - startTime) * 1000
-    ps.debug(string.format("getCitizens callback executed in %.2f ms for page %d", elapsedTime, page))
+    Bridge.debug(string.format("getCitizens callback executed in %.2f ms for page %d", elapsedTime, page))
 
     return {
         data = result,
@@ -247,7 +247,7 @@ end)
 
 -- searchPlayers - searches the database for citizens by provided query (first/last name, citizenid, phone number, occupation)
 -- Returns the same data structure as getCitizens but filtered by search query
-ps.registerCallback(resourceName .. ':server:searchCitizens', function(source, query)
+Bridge.registerCallback(resourceName .. ':server:searchCitizens', function(source, query)
     local src = source
     if not CheckAuth(src) then return {} end
     local startTime = os.clock()
@@ -256,8 +256,8 @@ ps.registerCallback(resourceName .. ':server:searchCitizens', function(source, q
         return {}
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'search_citizens', 'search', nil, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'search_citizens', 'search', nil, {
             query = query
         })
     end
@@ -304,7 +304,7 @@ ps.registerCallback(resourceName .. ':server:searchCitizens', function(source, q
 
     local ok, flagsByCid = pcall(collectCitizenFlags, citizenids)
     if not ok then
-        ps.warn('[searchCitizens] collectCitizenFlags failed: ' .. tostring(flagsByCid))
+        Bridge.warn('[searchCitizens] collectCitizenFlags failed: ' .. tostring(flagsByCid))
         flagsByCid = {}
     end
 
@@ -364,17 +364,17 @@ ps.registerCallback(resourceName .. ':server:searchCitizens', function(source, q
 
     local endTime = os.clock()
     local elapsedTime = (endTime - startTime) * 1000
-    ps.debug(string.format("searchCitizens callback executed in %.2f ms for query: %s", elapsedTime, query))
+    Bridge.debug(string.format("searchCitizens callback executed in %.2f ms for query: %s", elapsedTime, query))
 
     if result[1] then
-        ps.debug('[searchCitizens] Sample citizen data structure:', result[1])
+        Bridge.debug('[searchCitizens] Sample citizen data structure:', result[1])
     end
 
     return result
 end)
 
 -- getCitizenBOLOs - gets active BOLOs by type, probably have a table of active bolos load on script start and use that then save it to db periodically or on resource stop
-ps.registerCallback(resourceName .. ':server:getBOLO', function(source, boloType, boloStatus)
+Bridge.registerCallback(resourceName .. ':server:getBOLO', function(source, boloType, boloStatus)
     local src = source
     if not CheckAuth(src) then return {} end
     boloType = boloType or 'citizen'
@@ -399,18 +399,18 @@ ps.registerCallback(resourceName .. ':server:getBOLO', function(source, boloType
         local formattedBolo = {
             id = v.id,
             reportId = v.reportId and tostring(v.reportId) or 'N/A',
-            name = v.subject_name or ps.getPlayerNameByIdentifier(v.subject_id) or 'Unknown',
+            name = v.subject_name or Bridge.getPlayerNameByIdentifier(v.subject_id) or 'Unknown',
             type = v.type,
             notes = v.notes or '',
             status = v.status,
         }
         table.insert(result, formattedBolo)
     end
-    ps.debug('Fetched ' .. #result .. ' ' .. boloType .. ' BOLOs from database for source ' .. src, result)
+    Bridge.debug('Fetched ' .. #result .. ' ' .. boloType .. ' BOLOs from database for source ' .. src, result)
     return result
 end)
 
-ps.registerCallback(resourceName .. ':server:getCitizenProfile', function(source, citizenid)
+Bridge.registerCallback(resourceName .. ':server:getCitizenProfile', function(source, citizenid)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -659,7 +659,7 @@ ps.registerCallback(resourceName .. ':server:getCitizenProfile', function(source
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCitizenLicense', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCitizenLicense', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -684,7 +684,7 @@ ps.registerCallback(resourceName .. ':server:updateCitizenLicense', function(sou
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCitizenCustomLicense', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCitizenCustomLicense', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -703,7 +703,7 @@ ps.registerCallback(resourceName .. ':server:updateCitizenCustomLicense', functi
         return { success = false, message = 'License not found' }
     end
 
-    local grantedBy = ps.getIdentifier(src)
+    local grantedBy = Bridge.getIdentifier(src)
 
     MySQL.query.await([[
         INSERT INTO mdt_citizen_licenses (citizenid, license_id, active, granted_by)
@@ -715,7 +715,7 @@ ps.registerCallback(resourceName .. ':server:updateCitizenCustomLicense', functi
 end)
 
 -- Trigger fingerprint scan on a suspect (opens qb-policejob fingerprint UI)
-ps.registerCallback(resourceName .. ':server:addSuspectFingerprint', function(source, citizenid)
+Bridge.registerCallback(resourceName .. ':server:addSuspectFingerprint', function(source, citizenid)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -733,7 +733,7 @@ ps.registerCallback(resourceName .. ':server:addSuspectFingerprint', function(so
     end
 
     -- Find the suspect's server source (they must be online)
-    local targetPlayer = ps.getPlayerByIdentifier(citizenid)
+    local targetPlayer = Bridge.getPlayerByIdentifier(citizenid)
     if not targetPlayer then
         return { success = false, message = 'Suspect is not online' }
     end
@@ -756,7 +756,7 @@ ps.registerCallback(resourceName .. ':server:addSuspectFingerprint', function(so
 end)
 
 -- Update citizen fingerprint
-ps.registerCallback(resourceName .. ':server:updateCitizenFingerprint', function(source, citizenid, fingerprint)
+Bridge.registerCallback(resourceName .. ':server:updateCitizenFingerprint', function(source, citizenid, fingerprint)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -773,15 +773,15 @@ ps.registerCallback(resourceName .. ':server:updateCitizenFingerprint', function
     metadata.fingerprint = fingerprint or ''
     MySQL.update.await('UPDATE players SET metadata = ? WHERE citizenid = ?', { json.encode(metadata), citizenid })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'update_fingerprint', 'citizens', citizenid, { fingerprint = fingerprint })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'update_fingerprint', 'citizens', citizenid, { fingerprint = fingerprint })
     end
 
     return { success = true }
 end)
 
 -- Update citizen DNA
-ps.registerCallback(resourceName .. ':server:updateCitizenDNA', function(source, citizenid, dna)
+Bridge.registerCallback(resourceName .. ':server:updateCitizenDNA', function(source, citizenid, dna)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -798,14 +798,14 @@ ps.registerCallback(resourceName .. ':server:updateCitizenDNA', function(source,
     metadata.dna = dna or ''
     MySQL.update.await('UPDATE players SET metadata = ? WHERE citizenid = ?', { json.encode(metadata), citizenid })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'update_dna', 'citizens', citizenid, { dna = dna })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'update_dna', 'citizens', citizenid, { dna = dna })
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:createBolo', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createBolo', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -859,7 +859,7 @@ ps.registerCallback(resourceName .. ':server:createBolo', function(source, paylo
 end)
 
 -- Delete a BOLO
-ps.registerCallback(resourceName .. ':server:deleteBolo', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteBolo', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -874,7 +874,7 @@ ps.registerCallback(resourceName .. ':server:deleteBolo', function(source, paylo
 end)
 
 -- Update BOLO status (resolve, deactivate, reactivate)
-ps.registerCallback(resourceName .. ':server:updateBoloStatus', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateBoloStatus', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -895,7 +895,7 @@ ps.registerCallback(resourceName .. ':server:updateBoloStatus', function(source,
 end)
 
 -- Save citizen profile notes and profile picture
-ps.registerCallback(resourceName .. ':server:updateCitizen', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCitizen', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -918,7 +918,7 @@ ps.registerCallback(resourceName .. ':server:updateCitizen', function(source, pa
 end)
 
 -- Add a tag to a citizen profile
-ps.registerCallback(resourceName .. ':server:addCitizenTag', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:addCitizenTag', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -945,7 +945,7 @@ ps.registerCallback(resourceName .. ':server:addCitizenTag', function(source, pa
 end)
 
 -- Remove a tag from a citizen profile
-ps.registerCallback(resourceName .. ':server:removeCitizenTag', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:removeCitizenTag', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -966,7 +966,7 @@ ps.registerCallback(resourceName .. ':server:removeCitizenTag', function(source,
 end)
 
 -- Add an image to a citizen profile gallery
-ps.registerCallback(resourceName .. ':server:addCitizenGallery', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:addCitizenGallery', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -988,7 +988,7 @@ ps.registerCallback(resourceName .. ':server:addCitizenGallery', function(source
 end)
 
 -- Remove an image from a citizen profile gallery
-ps.registerCallback(resourceName .. ':server:removeCitizenGallery', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:removeCitizenGallery', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -1009,9 +1009,9 @@ ps.registerCallback(resourceName .. ':server:removeCitizenGallery', function(sou
 end)
 
 -- Civilian self-profile: returns own profile without LEO auth check
-ps.registerCallback(resourceName .. ':server:getMyProfile', function(source)
+Bridge.registerCallback(resourceName .. ':server:getMyProfile', function(source)
     local src = source
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid or citizenid == '' then
         return { success = false, message = 'Could not identify player' }
     end

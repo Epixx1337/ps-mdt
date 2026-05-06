@@ -8,7 +8,7 @@ RegisterNUICallback('getCourtCases', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:getCourtCases',
         data.page or 1,
         data.limit or 20,
@@ -30,7 +30,7 @@ RegisterNUICallback('getCourtCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getCourtCase', data.id)
+    local result = Bridge.callback(resourceName .. ':server:getCourtCase', data.id)
     cb(result)
 end)
 
@@ -40,7 +40,7 @@ RegisterNUICallback('createCourtCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:createCourtCase', data or {})
+    local result = Bridge.callback(resourceName .. ':server:createCourtCase', data or {})
     cb(result or { success = false })
 end)
 
@@ -55,7 +55,7 @@ RegisterNUICallback('updateCourtCase', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateCourtCase', data.id, data.payload or {})
+    local result = Bridge.callback(resourceName .. ':server:updateCourtCase', data.id, data.payload or {})
     cb(result or { success = false })
 end)
 
@@ -67,7 +67,7 @@ RegisterNUICallback('getWarrantRequests', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:getWarrantRequests',
         data.page or 1,
         data.limit or 20,
@@ -82,7 +82,7 @@ RegisterNUICallback('createWarrantRequest', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:createWarrantRequest', data or {})
+    local result = Bridge.callback(resourceName .. ':server:createWarrantRequest', data or {})
     cb(result or { success = false })
 end)
 
@@ -97,7 +97,7 @@ RegisterNUICallback('reviewWarrantRequest', function(data, cb)
         return
     end
 
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:reviewWarrantRequest',
         data.request_id,
         data.decision,
@@ -114,7 +114,7 @@ RegisterNUICallback('getCourtOrders', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:getCourtOrders',
         data.page or 1,
         data.limit or 20,
@@ -130,7 +130,7 @@ RegisterNUICallback('createCourtOrder', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:createCourtOrder', data or {})
+    local result = Bridge.callback(resourceName .. ':server:createCourtOrder', data or {})
     cb(result or { success = false })
 end)
 
@@ -145,7 +145,7 @@ RegisterNUICallback('updateCourtOrder', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateCourtOrder', data.id, data.payload or {})
+    local result = Bridge.callback(resourceName .. ':server:updateCourtOrder', data.id, data.payload or {})
     cb(result or { success = false })
 end)
 
@@ -160,7 +160,7 @@ RegisterNUICallback('revokeCourtOrder', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:revokeCourtOrder', data.id)
+    local result = Bridge.callback(resourceName .. ':server:revokeCourtOrder', data.id)
     cb(result or { success = false })
 end)
 
@@ -172,7 +172,7 @@ RegisterNUICallback('getLegalDocuments', function(data, cb)
     end
 
     data = data or {}
-    local result = ps.callback(
+    local result = Bridge.callback(
         resourceName .. ':server:getLegalDocuments',
         data.page or 1,
         data.limit or 20,
@@ -193,7 +193,7 @@ RegisterNUICallback('getLegalDocument', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getLegalDocument', data.id)
+    local result = Bridge.callback(resourceName .. ':server:getLegalDocument', data.id)
     cb(result)
 end)
 
@@ -203,7 +203,7 @@ RegisterNUICallback('createLegalDocument', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:createLegalDocument', data or {})
+    local result = Bridge.callback(resourceName .. ':server:createLegalDocument', data or {})
     cb(result or { success = false })
 end)
 
@@ -218,7 +218,7 @@ RegisterNUICallback('updateLegalDocument', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateLegalDocument', data.id, data.payload or {})
+    local result = Bridge.callback(resourceName .. ':server:updateLegalDocument', data.id, data.payload or {})
     cb(result or { success = false })
 end)
 
@@ -233,7 +233,7 @@ RegisterNUICallback('deleteLegalDocument', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:deleteLegalDocument', data.id)
+    local result = Bridge.callback(resourceName .. ':server:deleteLegalDocument', data.id)
     cb(result or { success = false })
 end)
 
@@ -244,6 +244,6 @@ RegisterNUICallback('getDojDashboard', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getDojDashboard')
+    local result = Bridge.callback(resourceName .. ':server:getDojDashboard')
     cb(result or {})
 end)

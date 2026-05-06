@@ -9,13 +9,13 @@ local function _isDojJob(jobName)
 end
 
 RegisterNUICallback('checkAuth', function(_, cb)
-    local jobType = ps.getJobType()
-    local jobName = ps.getJob() and ps.getJob().name or ''
+    local jobType = Bridge.getJobType()
+    local jobName = Bridge.getJob() and Bridge.getJob().name or ''
     local isDoj = _isDojJob(jobName) or (Config.DojJobType and jobType == Config.DojJobType)
     local isAuthorized = jobType == Config.PoliceJobType or jobType == Config.MedicalJobType or isDoj
     local mdtJobType = isDoj and 'doj' or (jobType == Config.MedicalJobType and 'ems' or 'leo')
-    local onDuty = ps.getJobDuty() or false
-    local playerData = ps.getPlayerData()
+    local onDuty = Bridge.getJobDuty() or false
+    local playerData = Bridge.getPlayerData()
 
     local isCivilian = false
     if not isAuthorized and Config.CivilianAccess and Config.CivilianAccess.enabled then
@@ -43,57 +43,57 @@ RegisterNUICallback('getMyPermissions', function(_, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getMyPermissions')
+    local result = Bridge.callback(resourceName .. ':server:getMyPermissions')
     cb(result or { permissions = {}, isBoss = false })
 end)
 
 function NUIUpdateAuth()
-    local jobType = ps.getJobType()
-    local jobName = ps.getJob() and ps.getJob().name or ''
+    local jobType = Bridge.getJobType()
+    local jobName = Bridge.getJob() and Bridge.getJob().name or ''
     local isDoj = _isDojJob(jobName) or (Config.DojJobType and jobType == Config.DojJobType)
     local isAuthorized = jobType == Config.PoliceJobType or jobType == Config.MedicalJobType or isDoj
     local mdtJobType = isDoj and 'doj' or (jobType == Config.MedicalJobType and 'ems' or 'leo')
-    local playerData = ps.getPlayerData()
+    local playerData = Bridge.getPlayerData()
     SendNUI('updateAuth', {
-        authorized = isAuthorized and (ps.getJobDuty() or false),
+        authorized = isAuthorized and (Bridge.getJobDuty() or false),
         playerData = type(playerData) == 'table' and {
             citizenid = playerData.citizenid,
             job = playerData.job,
             charinfo = playerData.charinfo,
         } or nil,
         isLEO = isAuthorized,
-        onDuty = ps.getJobDuty() or false,
+        onDuty = Bridge.getJobDuty() or false,
         jobType = mdtJobType,
     })
 end
 
 RegisterNUICallback('closeUI', function(_, cb)
-    -- ps.debug('MDT closeUI triggered via NUI callback')
+    -- Bridge.debug('MDT closeUI triggered via NUI callback')
     PlayMDTSound('close')
     cb({})
     CloseMDT()
 end)
 
 RegisterNUICallback('signOut', function(_, cb)
-    -- ps.debug('MDT signOut triggered via NUI callback')
+    -- Bridge.debug('MDT signOut triggered via NUI callback')
     PlayMDTSound('close')
     cb({})
     CloseMDT()
-    ps.notify('Signed out of MDT', 'success')
+    Bridge.notify('Signed out of MDT', 'success')
 end)
 
 RegisterNUICallback('toggleDuty', function(_, cb)
-    -- ps.debug('MDT toggleDuty triggered via NUI callback')
+    -- Bridge.debug('MDT toggleDuty triggered via NUI callback')
     PlayMDTSound('buttonClick')
     cb({})
-    TriggerServerEvent('ps_lib:server:toggleDuty')
+    TriggerServerEvent('mdt:server:toggleDuty')
 end)
 
 -- JOB DATA -----------------------------------------------
 RegisterNUICallback('getJobData', function(_, cb)
 
-    local jobData = ps.callback(resourceName .. ':server:getJobData')
-     ps.debug('[getJobData] Triggered NUI callback on client', jobData)
+    local jobData = Bridge.callback(resourceName .. ':server:getJobData')
+     Bridge.debug('[getJobData] Triggered NUI callback on client', jobData)
     cb(jobData or {})
 end)
 
@@ -103,7 +103,7 @@ RegisterNUICallback('getReportStatistics', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local reportStats = ps.callback(resourceName .. ':server:getReportStatistics')
+    local reportStats = Bridge.callback(resourceName .. ':server:getReportStatistics')
     cb(reportStats)
 end)
 
@@ -115,8 +115,8 @@ RegisterNUICallback('getTimeStatistics', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local timeStats = ps.callback(resourceName .. ':server:getTimeStatistics')
-    -- ps.debug('[getTimeStatistics] Triggered NUI callback on client', timeStats)
+    local timeStats = Bridge.callback(resourceName .. ':server:getTimeStatistics')
+    -- Bridge.debug('[getTimeStatistics] Triggered NUI callback on client', timeStats)
     cb(timeStats)
 end)
 
@@ -127,9 +127,9 @@ RegisterNUICallback('getActiveWarrants', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local activeWarrants = ps.callback(resourceName .. ':server:getActiveWarrants')
+    local activeWarrants = Bridge.callback(resourceName .. ':server:getActiveWarrants')
 
-    -- ps.debug('[getActiveWarrants] Triggered NUI callback on client',activeWarrants)
+    -- Bridge.debug('[getActiveWarrants] Triggered NUI callback on client',activeWarrants)
     cb(activeWarrants)
 end)
 
@@ -137,7 +137,7 @@ end)
 RegisterNUICallback('viewWarrant', function(data, cb)
     cb({})
     TriggerServerEvent(resourceName..':server:viewWarrant', data.warrantId)
-    -- ps.debug(('Viewing Warrant ID: %s'):format(data.warrantId))
+    -- Bridge.debug(('Viewing Warrant ID: %s'):format(data.warrantId))
 end)
 
 
@@ -148,8 +148,8 @@ RegisterNUICallback('getBulletins', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local bulletins = ps.callback(resourceName .. ':server:getBulletins')
-     ps.debug('[getBulletins] Triggered NUI callback on client',bulletins )
+    local bulletins = Bridge.callback(resourceName .. ':server:getBulletins')
+     Bridge.debug('[getBulletins] Triggered NUI callback on client',bulletins )
     cb(bulletins)
 end)
 
@@ -160,7 +160,7 @@ RegisterNUICallback('createBulletin', function(data, cb)
         cb({ success = false, message = 'Content is required' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:createBulletin', data)
+    local result = Bridge.callback(resourceName .. ':server:createBulletin', data)
     cb(result or { success = false })
 end)
 
@@ -170,7 +170,7 @@ RegisterNUICallback('deleteBulletin', function(data, cb)
         cb({ success = false, message = 'Missing bulletin ID' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:deleteBulletin', data)
+    local result = Bridge.callback(resourceName .. ':server:deleteBulletin', data)
     cb(result or { success = false })
 end)
 
@@ -183,7 +183,7 @@ RegisterNUICallback('getRecentReports', function(data, cb)
     end
     local page = data and data.page or nil
     local limit = data and data.limit or nil
-    local recentReports = ps.callback(resourceName .. ':server:getRecentReports', page, limit)
+    local recentReports = Bridge.callback(resourceName .. ':server:getRecentReports', page, limit)
     cb(recentReports)
 end)
 
@@ -194,7 +194,7 @@ RegisterNUICallback('getActiveBolos', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local activeBolos = ps.callback(resourceName .. ':server:getActiveBolos')
+    local activeBolos = Bridge.callback(resourceName .. ':server:getActiveBolos')
     cb(activeBolos)
 end)
 
@@ -202,7 +202,7 @@ end)
 RegisterNUICallback('viewReport', function(data, cb)
     cb({})
     TriggerServerEvent(resourceName..':server:viewReport', data.reportId)
-    -- ps.debug(('Viewing Report ID: %s'):format(data.reportId))
+    -- Bridge.debug(('Viewing Report ID: %s'):format(data.reportId))
 end)
 
 -- ACTIVE UNITS ---------------------------------------
@@ -212,8 +212,8 @@ RegisterNUICallback('getActiveUnits', function(_, cb)
         cb({ success = false, message = 'MDT is not open' })
         return
     end
-    local activeUnits = ps.callback(resourceName .. ':server:getActiveUnits')
-    -- ps.debug('[getActiveUnits] Active Units Data:', activeUnits)
+    local activeUnits = Bridge.callback(resourceName .. ':server:getActiveUnits')
+    -- Bridge.debug('[getActiveUnits] Active Units Data:', activeUnits)
     cb(activeUnits)
 end)
 
@@ -224,17 +224,17 @@ end)
 local function buildPlayerData()
     return {
         charinfo = {
-            firstname = ps.getCharInfo('firstname'),
-            lastname = ps.getCharInfo('lastname'),
+            firstname = Bridge.getCharInfo('firstname'),
+            lastname = Bridge.getCharInfo('lastname'),
         },
         metadata = {
-            callsign = ps.getMetadata('callsign'),
+            callsign = Bridge.getMetadata('callsign'),
         },
-        citizenid = ps.getIdentifier(),
+        citizenid = Bridge.getIdentifier(),
         job = {
-            type = ps.getJobData('type'),
-            name = ps.getJobData('name'),
-            label = ps.getJobData('label'),
+            type = Bridge.getJobData('type'),
+            name = Bridge.getJobData('name'),
+            label = Bridge.getJobData('label'),
         },
     }
 end
@@ -257,7 +257,7 @@ RegisterNUICallback('getUsageMetrics', function(_, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getUsageMetrics')
+    local result = Bridge.callback(resourceName .. ':server:getUsageMetrics')
     cb(result or {})
 end)
 
@@ -266,7 +266,7 @@ RegisterNUICallback("attachToDispatch", function(data, cb)
     local playerData = buildPlayerData()
     TriggerServerEvent('ps-dispatch:server:attach', data, playerData)
     cb(GetRecentDispatch())
-    -- ps.debug('Attached to Dispatch Call: ' .. json.encode(data))
+    -- Bridge.debug('Attached to Dispatch Call: ' .. json.encode(data))
 end)
 
 RegisterNUICallback("detachFromDispatch", function(data, cb)
@@ -275,24 +275,24 @@ RegisterNUICallback("detachFromDispatch", function(data, cb)
     TriggerServerEvent('ps-dispatch:server:detach', data, playerData)
     Wait(100) -- wait to make sure non 1of1 servers have time to alter a server side table faster than the cb :kek:
     cb(GetRecentDispatch())
-    -- ps.debug('Detached from Dispatch Call: ' .. json.encode(data))
+    -- Bridge.debug('Detached from Dispatch Call: ' .. json.encode(data))
 end)
 
 RegisterNUICallback("routeToDispatch", function(data, cb)
     local coords = data.coords or data.origin
     if not coords then
         cb('ok')
-        ps.notify('No location data for this dispatch', 'error')
+        Bridge.notify('No location data for this dispatch', 'error')
         return
     end
     local x = tonumber(coords.x) or tonumber(coords[1])
     local y = tonumber(coords.y) or tonumber(coords[2])
     if not x or not y then
         cb('ok')
-        ps.notify('Invalid location data', 'error')
+        Bridge.notify('Invalid location data', 'error')
         return
     end
     SetNewWaypoint(x, y)
     cb('ok')
-    ps.notify('Set Route to Dispatch Location', 'success')
+    Bridge.notify('Set Route to Dispatch Location', 'success')
 end)

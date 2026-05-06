@@ -7,7 +7,7 @@ RegisterNUICallback('viewBodycam', function(data, cb)
         return
     end
 
-    ps.debug('viewBodycam', data)
+    Bridge.debug('viewBodycam', data)
 
     local bodycamId = data
     if type(data) == 'table' then
@@ -19,7 +19,7 @@ RegisterNUICallback('viewBodycam', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:viewBodycam', bodycamId)
+    local result = Bridge.callback(resourceName .. ':server:viewBodycam', bodycamId)
 
     if result and result.success then
         CloseMDT()
@@ -36,7 +36,7 @@ RegisterNUICallback('getBodycams', function(_, cb)
         return
     end
 
-    local bodycams = ps.callback(resourceName .. ':server:getBodycams')
+    local bodycams = Bridge.callback(resourceName .. ':server:getBodycams')
 
     if bodycams then
         cb({ success = true, data = bodycams })

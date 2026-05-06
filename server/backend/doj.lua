@@ -12,8 +12,8 @@ local function buildOrderNumber(id)
 end
 
 local function getDisplayName(src)
-    local callsign = ps.getMetadata(src, 'callsign')
-    local name = ps.getPlayerName(src) or 'Unknown'
+    local callsign = Bridge.getMetadata(src, 'callsign')
+    local name = Bridge.getPlayerName(src) or 'Unknown'
     if callsign and callsign ~= '' then
         return callsign .. ' ' .. name
     end
@@ -21,7 +21,7 @@ local function getDisplayName(src)
 end
 
 -- Court Cases
-ps.registerCallback(resourceName .. ':server:getCourtCases', function(source, page, limit, status, case_type, search)
+Bridge.registerCallback(resourceName .. ':server:getCourtCases', function(source, page, limit, status, case_type, search)
     local src = source
     if not CheckAuth(src) then return { cases = {}, total = 0 } end
 
@@ -83,7 +83,7 @@ ps.registerCallback(resourceName .. ':server:getCourtCases', function(source, pa
     return { cases = rows or {}, total = total }
 end)
 
-ps.registerCallback(resourceName .. ':server:getCourtCase', function(source, caseId)
+Bridge.registerCallback(resourceName .. ':server:getCourtCase', function(source, caseId)
     local src = source
     if not CheckAuth(src) then return nil end
 
@@ -94,7 +94,7 @@ ps.registerCallback(resourceName .. ':server:getCourtCase', function(source, cas
     return row
 end)
 
-ps.registerCallback(resourceName .. ':server:createCourtCase', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createCourtCase', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -108,7 +108,7 @@ ps.registerCallback(resourceName .. ':server:createCourtCase', function(source, 
     local linked_mdt_case_id = payload.linked_mdt_case_id and tonumber(payload.linked_mdt_case_id) or nil
     local referred_from_report_id = payload.referred_from_report_id and tonumber(payload.referred_from_report_id) or nil
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then
         return { success = false, error = 'Missing citizen id' }
     end
@@ -132,14 +132,14 @@ ps.registerCallback(resourceName .. ':server:createCourtCase', function(source, 
     local caseNumber = buildCourtCaseNumber(id)
     MySQL.update.await('UPDATE mdt_court_cases SET case_number = ? WHERE id = ?', { caseNumber, id })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'court_case_created', 'court_case', id, { title = title, case_type = case_type })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'court_case_created', 'court_case', id, { title = title, case_type = case_type })
     end
 
     return { success = true, id = id, case_number = caseNumber }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCourtCase', function(source, caseId, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCourtCase', function(source, caseId, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -181,15 +181,15 @@ ps.registerCallback(resourceName .. ':server:updateCourtCase', function(source, 
         return { success = false, error = 'Failed to update court case' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'court_case_updated', 'court_case', caseId, payload)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'court_case_updated', 'court_case', caseId, payload)
     end
 
     return { success = true }
 end)
 
 -- Warrant Requests
-ps.registerCallback(resourceName .. ':server:getWarrantRequests', function(source, page, limit, status)
+Bridge.registerCallback(resourceName .. ':server:getWarrantRequests', function(source, page, limit, status)
     local src = source
     if not CheckAuth(src) then return { requests = {}, total = 0 } end
 
@@ -235,7 +235,7 @@ ps.registerCallback(resourceName .. ':server:getWarrantRequests', function(sourc
     return { requests = rows or {}, total = total }
 end)
 
-ps.registerCallback(resourceName .. ':server:createWarrantRequest', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createWarrantRequest', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -254,7 +254,7 @@ ps.registerCallback(resourceName .. ':server:createWarrantRequest', function(sou
         return { success = false, error = 'A reason/justification is required' }
     end
 
-    local requesting_officer = ps.getIdentifier(src)
+    local requesting_officer = Bridge.getIdentifier(src)
     local officer_name = getDisplayName(src)
 
     -- Prevent duplicate pending request for same citizen on same report
@@ -279,8 +279,8 @@ ps.registerCallback(resourceName .. ':server:createWarrantRequest', function(sou
         return { success = false, error = 'Failed to create warrant request' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'warrant_request_created', 'warrant_request', id, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'warrant_request_created', 'warrant_request', id, {
             citizenid = citizenid,
             linked_report_id = linked_report_id
         })
@@ -289,7 +289,7 @@ ps.registerCallback(resourceName .. ':server:createWarrantRequest', function(sou
     return { success = true, id = id }
 end)
 
-ps.registerCallback(resourceName .. ':server:reviewWarrantRequest', function(source, request_id, decision, reason)
+Bridge.registerCallback(resourceName .. ':server:reviewWarrantRequest', function(source, request_id, decision, reason)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -305,7 +305,7 @@ ps.registerCallback(resourceName .. ':server:reviewWarrantRequest', function(sou
         return { success = false, error = 'Warrant request not found or already reviewed' }
     end
 
-    local reviewerCitizenid = ps.getIdentifier(src)
+    local reviewerCitizenid = Bridge.getIdentifier(src)
     local reviewerName = getDisplayName(src)
 
     -- Update the request status
@@ -336,8 +336,8 @@ ps.registerCallback(resourceName .. ':server:reviewWarrantRequest', function(sou
         end
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'warrant_request_reviewed', 'warrant_request', request_id, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'warrant_request_reviewed', 'warrant_request', request_id, {
             decision = decision,
             reason = reason,
             citizenid = request.citizenid
@@ -348,7 +348,7 @@ ps.registerCallback(resourceName .. ':server:reviewWarrantRequest', function(sou
 end)
 
 -- Court Orders
-ps.registerCallback(resourceName .. ':server:getCourtOrders', function(source, page, limit, orderType, status)
+Bridge.registerCallback(resourceName .. ':server:getCourtOrders', function(source, page, limit, orderType, status)
     local src = source
     if not CheckAuth(src) then return { orders = {}, total = 0 } end
 
@@ -399,7 +399,7 @@ ps.registerCallback(resourceName .. ':server:getCourtOrders', function(source, p
     return { orders = rows or {}, total = total }
 end)
 
-ps.registerCallback(resourceName .. ':server:createCourtOrder', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createCourtOrder', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -412,7 +412,7 @@ ps.registerCallback(resourceName .. ':server:createCourtOrder', function(source,
         return { success = false, error = 'Missing required fields (title, type, content)' }
     end
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then
         return { success = false, error = 'Missing citizen id' }
     end
@@ -441,14 +441,14 @@ ps.registerCallback(resourceName .. ':server:createCourtOrder', function(source,
     local orderNumber = buildOrderNumber(id)
     MySQL.update.await('UPDATE mdt_court_orders SET order_number = ? WHERE id = ?', { orderNumber, id })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'court_order_created', 'court_order', id, { title = title, type = orderType })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'court_order_created', 'court_order', id, { title = title, type = orderType })
     end
 
     return { success = true, id = id, order_number = orderNumber }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCourtOrder', function(source, orderId, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCourtOrder', function(source, orderId, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -486,14 +486,14 @@ ps.registerCallback(resourceName .. ':server:updateCourtOrder', function(source,
         return { success = false, error = 'Failed to update court order' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'court_order_updated', 'court_order', orderId, payload)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'court_order_updated', 'court_order', orderId, payload)
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:revokeCourtOrder', function(source, orderId)
+Bridge.registerCallback(resourceName .. ':server:revokeCourtOrder', function(source, orderId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -509,15 +509,15 @@ ps.registerCallback(resourceName .. ':server:revokeCourtOrder', function(source,
         return { success = false, error = 'Failed to revoke court order' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'court_order_revoked', 'court_order', orderId, {})
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'court_order_revoked', 'court_order', orderId, {})
     end
 
     return { success = true }
 end)
 
 -- Legal Documents
-ps.registerCallback(resourceName .. ':server:getLegalDocuments', function(source, page, limit, docType, status)
+Bridge.registerCallback(resourceName .. ':server:getLegalDocuments', function(source, page, limit, docType, status)
     local src = source
     if not CheckAuth(src) then return { documents = {}, total = 0 } end
 
@@ -567,7 +567,7 @@ ps.registerCallback(resourceName .. ':server:getLegalDocuments', function(source
     return { documents = rows or {}, total = total }
 end)
 
-ps.registerCallback(resourceName .. ':server:getLegalDocument', function(source, docId)
+Bridge.registerCallback(resourceName .. ':server:getLegalDocument', function(source, docId)
     local src = source
     if not CheckAuth(src) then return nil end
 
@@ -578,7 +578,7 @@ ps.registerCallback(resourceName .. ':server:getLegalDocument', function(source,
     return row
 end)
 
-ps.registerCallback(resourceName .. ':server:createLegalDocument', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createLegalDocument', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -591,7 +591,7 @@ ps.registerCallback(resourceName .. ':server:createLegalDocument', function(sour
         return { success = false, error = 'Missing required fields (title, type)' }
     end
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then
         return { success = false, error = 'Missing citizen id' }
     end
@@ -613,14 +613,14 @@ ps.registerCallback(resourceName .. ':server:createLegalDocument', function(sour
         return { success = false, error = 'Failed to create legal document' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'legal_document_created', 'legal_document', id, { title = title, type = docType })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'legal_document_created', 'legal_document', id, { title = title, type = docType })
     end
 
     return { success = true, id = id }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateLegalDocument', function(source, docId, payload)
+Bridge.registerCallback(resourceName .. ':server:updateLegalDocument', function(source, docId, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -654,14 +654,14 @@ ps.registerCallback(resourceName .. ':server:updateLegalDocument', function(sour
         return { success = false, error = 'Failed to update legal document' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'legal_document_updated', 'legal_document', docId, payload)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'legal_document_updated', 'legal_document', docId, payload)
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteLegalDocument', function(source, docId)
+Bridge.registerCallback(resourceName .. ':server:deleteLegalDocument', function(source, docId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -680,15 +680,15 @@ ps.registerCallback(resourceName .. ':server:deleteLegalDocument', function(sour
 
     MySQL.query.await('DELETE FROM mdt_legal_documents WHERE id = ?', { docId })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'legal_document_deleted', 'legal_document', docId, {})
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'legal_document_deleted', 'legal_document', docId, {})
     end
 
     return { success = true }
 end)
 
 -- DOJ Dashboard
-ps.registerCallback(resourceName .. ':server:getDojDashboard', function(source)
+Bridge.registerCallback(resourceName .. ':server:getDojDashboard', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 

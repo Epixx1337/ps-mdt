@@ -42,7 +42,7 @@ local function getExpiryDate(value)
     return nil
 end
 
-ps.registerCallback(resourceName .. ':server:getActiveWarrants', function(source)
+Bridge.registerCallback(resourceName .. ':server:getActiveWarrants', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -66,7 +66,7 @@ ps.registerCallback(resourceName .. ':server:getActiveWarrants', function(source
     for _, row in ipairs(rows or {}) do
         local name = ((row.firstname or '') .. ' ' .. (row.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
         if name == '' then
-            name = ps.getPlayerNameByIdentifier(row.citizenid) or 'Unknown'
+            name = Bridge.getPlayerNameByIdentifier(row.citizenid) or 'Unknown'
         end
         results[#results + 1] = {
             reportid = row.reportid,
@@ -82,7 +82,7 @@ ps.registerCallback(resourceName .. ':server:getActiveWarrants', function(source
     return results
 end)
 
-ps.registerCallback(resourceName .. ':server:issueWarrant', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:issueWarrant', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -110,8 +110,8 @@ ps.registerCallback(resourceName .. ':server:issueWarrant', function(source, dat
         ]], { reportId, citizenid, expiryDate })
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'warrant_issued', 'warrant', reportId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'warrant_issued', 'warrant', reportId, {
             citizenid = citizenid,
             expirydate = expiryDate
         })
@@ -120,7 +120,7 @@ ps.registerCallback(resourceName .. ':server:issueWarrant', function(source, dat
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:closeWarrant', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:closeWarrant', function(source, data)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -138,8 +138,8 @@ ps.registerCallback(resourceName .. ':server:closeWarrant', function(source, dat
     ]], { reportId, citizenid })
 
     if updated and updated > 0 then
-        if ps.auditLog then
-            ps.auditLog(src, 'warrant_closed', 'warrant', reportId, {
+        if Bridge.auditLog then
+            Bridge.auditLog(src, 'warrant_closed', 'warrant', reportId, {
                 citizenid = citizenid
             })
         end

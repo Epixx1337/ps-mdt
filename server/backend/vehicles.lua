@@ -13,8 +13,8 @@ local function formatLabel(value)
 end
 
 local function getVehicleShared(model)
-    if not Framework then return nil end
-    return Framework.GetVehicleByModel(model)
+    if not Bridge then return nil end
+    return Bridge.GetVehicleByModel(model)
 end
 
 local function buildVehicleFlags(stolen, hasActiveBolo, status)
@@ -42,7 +42,7 @@ local function countSetItems(set)
     return count
 end
 
-ps.registerCallback(resourceName .. ':server:GetVehicles', function(source)
+Bridge.registerCallback(resourceName .. ':server:GetVehicles', function(source)
     local startTime = os.clock()
     local src = source
     if not CheckAuth(src) then return end
@@ -104,7 +104,7 @@ ps.registerCallback(resourceName .. ':server:GetVehicles', function(source)
             model = v.vehicle,
             label = vehicleData and vehicleData.name or 'Unknown Vehicle',
             plate = plate,
-            owner = ps.getPlayerNameByIdentifier(v.citizenid) or 'Unknown',
+            owner = Bridge.getPlayerNameByIdentifier(v.citizenid) or 'Unknown',
             class = formatLabel(vehicleData and vehicleData.category or 'Unknown'),
             type = formatLabel(vehicleData and vehicleData.type or 'Unknown'),
             flags = flags,
@@ -118,19 +118,19 @@ ps.registerCallback(resourceName .. ':server:GetVehicles', function(source)
 
     local endTime = os.clock()
     local elapsedTime = (endTime - startTime) * 1000
-    ps.debug(string.format("getVehicles callback executed in %.2f ms", elapsedTime))
+    Bridge.debug(string.format("getVehicles callback executed in %.2f ms", elapsedTime))
 
     if vehicles[1] then
-        ps.debug('[getVehicles] Sample vehicle data structure:', vehicles[1])
+        Bridge.debug('[getVehicles] Sample vehicle data structure:', vehicles[1])
     end
     if bolos[1] then
-        ps.debug('[getVehicles] Sample bolo data structure:', bolos[1])
+        Bridge.debug('[getVehicles] Sample bolo data structure:', bolos[1])
     end
 
     return {vehicles = vehicles, bolos = bolos}
 end)
 
-ps.registerCallback(resourceName .. ':server:UpdateVehicle', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:UpdateVehicle', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -190,8 +190,8 @@ ps.registerCallback(resourceName .. ':server:UpdateVehicle', function(source, pa
 
     MySQL.update.await(('UPDATE player_vehicles SET %s WHERE plate = ?'):format(table.concat(updates, ', ')), values)
 
-    if ps.auditLog then
-        ps.auditLog(src, 'vehicle_updated', 'vehicle', plate, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'vehicle_updated', 'vehicle', plate, {
             plate = plate,
             points = points,
             status = status,
@@ -202,7 +202,7 @@ ps.registerCallback(resourceName .. ':server:UpdateVehicle', function(source, pa
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:GetVehicle', function(source, plate)
+Bridge.registerCallback(resourceName .. ':server:GetVehicle', function(source, plate)
     local src = source
     if not CheckAuth(src) then return end
 
@@ -267,7 +267,7 @@ ps.registerCallback(resourceName .. ':server:GetVehicle', function(source, plate
             label = vehicleData and vehicleData.name or 'Unknown Vehicle',
             brand = vehicleData and vehicleData.brand or nil,
             plate = plateUpper,
-            owner = ps.getPlayerNameByIdentifier(row.citizenid) or 'Unknown',
+            owner = Bridge.getPlayerNameByIdentifier(row.citizenid) or 'Unknown',
             class = formatLabel(vehicleData and vehicleData.category or 'Unknown'),
             type = formatLabel(vehicleData and vehicleData.type or 'Unknown'),
             image = (row.image and row.image ~= '' and row.image) or ('https://docs.fivem.net/vehicles/' .. row.vehicle .. '.webp'),

@@ -1,5 +1,5 @@
 function GetActiveUnits(jobType)
-    return ps.getJobTypeCount(jobType or "leo")
+    return Bridge.getJobTypeCount(jobType or "leo")
 end
 
 --- Check if a job is a police/LEO job based on Config.PoliceJobs and Config.PoliceJobType
@@ -33,7 +33,7 @@ function EnsureProfileExists(citizenid)
     end
 
     -- Try online player first
-    local playerData = ps.getPlayerByIdentifier(citizenid)
+    local playerData = Bridge.getPlayerByIdentifier(citizenid)
     if playerData then
         playerData = playerData.PlayerData
         local charinfo = playerData.charinfo
@@ -47,17 +47,17 @@ function EnsureProfileExists(citizenid)
         ]], { citizenid, fullname, callsign })
 
         if success then
-            ps.debug('Auto-created MDT profile for: ' .. citizenid)
+            Bridge.debug('Auto-created MDT profile for: ' .. citizenid)
             return true
         end
-        ps.warn('Failed to create MDT profile for: ' .. citizenid)
+        Bridge.warn('Failed to create MDT profile for: ' .. citizenid)
         return false
     end
 
     -- Fallback: resolve from players table (offline player)
     local row = MySQL.single.await('SELECT charinfo, metadata FROM players WHERE citizenid = ? LIMIT 1', { citizenid })
     if not row then
-        ps.warn('No player data found for citizenid: ' .. citizenid)
+        Bridge.warn('No player data found for citizenid: ' .. citizenid)
         return false
     end
 
@@ -73,10 +73,10 @@ function EnsureProfileExists(citizenid)
     ]], { citizenid, fullname ~= '' and fullname or 'Unknown', callsign })
 
     if success then
-        ps.debug('Auto-created MDT profile for: ' .. citizenid)
+        Bridge.debug('Auto-created MDT profile for: ' .. citizenid)
         return true
     end
-    ps.warn('Failed to create MDT profile for: ' .. citizenid)
+    Bridge.warn('Failed to create MDT profile for: ' .. citizenid)
     return false
 end
 
@@ -134,23 +134,23 @@ function GetVehicleOwner(plate)
     -- Sanitise plate input
     plate = string.gsub(plate, "%s+", "") -- Remove spaces
     plate = string.upper(plate) -- Convert to uppercase
-    ps.debug('Fetching vehicle owner for plate: ' .. plate)
+    Bridge.debug('Fetching vehicle owner for plate: ' .. plate)
 
     -- Fetch the owner
     local result = MySQL.scalar.await('SELECT citizenid FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
-    ps.debug('Vehicle owner result: ' .. tostring(result))
+    Bridge.debug('Vehicle owner result: ' .. tostring(result))
 
     if result then
         -- If a result is found, get the player's name
-        local playerName = ps.getPlayerNameByIdentifier(result)
-        ps.debug('Vehicle owner name: ' .. tostring(playerName))
+        local playerName = Bridge.getPlayerNameByIdentifier(result)
+        Bridge.debug('Vehicle owner name: ' .. tostring(playerName))
         if playerName and playerName ~= 'Unknown Person' then
             return playerName
         end
     end
 
     -- If no owner or player name is found, return "Unknown Owner"
-    ps.debug('No owner found for plate: ' .. plate)
+    Bridge.debug('No owner found for plate: ' .. plate)
     return "Unknown Owner"
 end
 
@@ -213,7 +213,7 @@ function GetWarrantStatus(plate)
     local ownerCid = MySQL.scalar.await('SELECT citizenid FROM player_vehicles WHERE UPPER(REPLACE(plate, \' \', \'\')) = ? LIMIT 1', { plate })
     if not ownerCid then return false, "", "" end
 
-    local ownerName = ps.getPlayerNameByIdentifier(ownerCid) or "Unknown"
+    local ownerName = Bridge.getPlayerNameByIdentifier(ownerCid) or "Unknown"
 
     local warrantRow = MySQL.single.await([[
         SELECT reportid
@@ -282,7 +282,7 @@ end
 
 -- Get citizen list with charge counts and weapon counts (batch queries, no N+1)
 function getCitizens(source)
-    if ps.getJobType(source) ~= "leo" then
+    if Bridge.getJobType(source) ~= "leo" then
         return {}
     end
 
@@ -313,7 +313,7 @@ function getCitizens(source)
 end
 
 -- Item check fallback (when ox_inventory/qb-inventory not detected client-side)
-ps.registerCallback(tostring(GetCurrentResourceName()) .. ':server:hasItem', function(source, itemName)
+Bridge.registerCallback(tostring(GetCurrentResourceName()) .. ':server:hasItem', function(source, itemName)
     if not source or not itemName then return false end
     if GetResourceState('ox_inventory') == 'started' then
         local items = exports.ox_inventory:GetInventoryItems(source)
@@ -324,22 +324,22 @@ ps.registerCallback(tostring(GetCurrentResourceName()) .. ':server:hasItem', fun
         end
         return false
     end
-    if Framework then
-        local player = Framework.GetPlayer(source)
+    if Bridge then
+        local player = Bridge.GetPlayer(source)
         if player then
-            local item = Framework.GetItemByName(player, itemName)
+            local item = Bridge.GetItemByName(player, itemName)
             return item ~= nil
         end
     end
     return false
 end)
 
-ps.registerCallback('ps-mdt:hasProfile', function(source)
+Bridge.registerCallback('ps-mdt:hasProfile', function(source)
     local src = source
     assert(src, 'Player ID cannot be nil')
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     if not citizenId then
-        ps.warn('No citizen ID found for source: ' .. tostring(src))
+        Bridge.warn('No citizen ID found for source: ' .. tostring(src))
         return false
     end
 

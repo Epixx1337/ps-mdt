@@ -2,8 +2,8 @@ local resourceName = tostring(GetCurrentResourceName())
 
 local function resolvePoliceJobName(source)
     local jobName = (Config and Config.PoliceJobs and Config.PoliceJobs[1]) or 'police'
-    if source and ps and ps.getJobName then
-        local playerJob = ps.getJobName(source)
+    if source and Bridge and Bridge.getJobName then
+        local playerJob = Bridge.getJobName(source)
         if playerJob then
             jobName = playerJob
         end
@@ -37,15 +37,15 @@ end
 local function getPoliceJobDefinition(source)
     local jobName = resolvePoliceJobName(source)
 
-    if Framework then
-        local jobs = Framework.GetSharedJobs()
+    if Bridge then
+        local jobs = Bridge.GetSharedJobs()
         if jobs and jobs[jobName] then
             return jobName, jobs[jobName]
         end
     end
 
-    if ps and ps.getSharedJobData then
-        local job = ps.getSharedJobData(jobName)
+    if Bridge and Bridge.getSharedJobData then
+        local job = Bridge.getSharedJobData(jobName)
         if job then
             return jobName, job
         end
@@ -100,14 +100,14 @@ local function getDefaultRolePermissions(jobName, gradeKey, isBoss)
     return {}
 end
 
-ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(source)
+Bridge.registerCallback(resourceName .. ':server:getPermissionRoles', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 
     local jobName, job = getPoliceJobDefinition(src)
     local hasBossAccess = false
-    if ps and ps.getJobData then
-        local jobData = ps.getJobData(src)
+    if Bridge and Bridge.getJobData then
+        local jobData = Bridge.getJobData(src)
         if jobData and jobData.grade then
             if type(jobData.grade) == 'table' then
                 hasBossAccess = jobData.grade.isboss == true or jobData.grade.isBoss == true or jobData.grade.boss == true
@@ -120,10 +120,10 @@ ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(sourc
             end
         end
     end
-    ps.debug('[getPermissionRoles] jobName', jobName, 'job', job and job.label or 'nil')
+    Bridge.debug('[getPermissionRoles] jobName', jobName, 'job', job and job.label or 'nil')
     if not job or not job.grades then
-        ps.debug('[getPermissionRoles] no job grades, using fallback')
-        local isBoss = ps and ps.isBoss and ps.isBoss(src) or false
+        Bridge.debug('[getPermissionRoles] no job grades, using fallback')
+        local isBoss = Bridge and Bridge.isBoss and Bridge.isBoss(src) or false
         local fallbackPermissions = getDefaultRolePermissions(jobName, 0, isBoss)
         return {
             job = jobName,
@@ -142,7 +142,7 @@ ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(sourc
 
     local roles = {}
     local storedRows = MySQL.query.await('SELECT grade, permissions FROM mdt_permission_roles WHERE job = ?', { jobName }) or {}
-    ps.debug('[getPermissionRoles] stored rows', storedRows and #storedRows or 0)
+    Bridge.debug('[getPermissionRoles] stored rows', storedRows and #storedRows or 0)
     local storedByGrade = {}
     for _, row in ipairs(storedRows) do
         if row.grade ~= nil then
@@ -156,7 +156,7 @@ ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(sourc
     for _ in pairs(grades or {}) do
         gradeCount = gradeCount + 1
     end
-    ps.debug('[getPermissionRoles] grade count', gradeCount)
+    Bridge.debug('[getPermissionRoles] grade count', gradeCount)
     for gradeKeyString, gradeData in pairs(grades) do
         local isBoss = hasBossAccess or isBossGrade(gradeData)
         local permissions = storedByGrade[gradeKeyString]
@@ -173,8 +173,8 @@ ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(sourc
         }
     end
 
-    if #roles == 0 and ps and ps.getJobData then
-        local jobData = ps.getJobData(src)
+    if #roles == 0 and Bridge and Bridge.getJobData then
+        local jobData = Bridge.getJobData(src)
         if jobData then
             local gradeValue = jobData.grade
             local gradeLabel = nil
@@ -217,7 +217,7 @@ ps.registerCallback(resourceName .. ':server:getPermissionRoles', function(sourc
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:updatePermissionRole', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updatePermissionRole', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -241,7 +241,7 @@ ps.registerCallback(resourceName .. ':server:updatePermissionRole', function(sou
         permissions = normalizePermissionList(getAllPermissions())
     end
 
-    local updatedBy = ps.getIdentifier(src)
+    local updatedBy = Bridge.getIdentifier(src)
     MySQL.update.await([[
         INSERT INTO mdt_permission_roles (job, grade, permissions, updated_by)
         VALUES (?, ?, ?, ?)
@@ -323,7 +323,7 @@ CreateThread(function()
     end
 end)
 
-ps.registerCallback(resourceName .. ':server:getTags', function(source, data)
+Bridge.registerCallback(resourceName .. ':server:getTags', function(source, data)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -356,7 +356,7 @@ ps.registerCallback(resourceName .. ':server:getTags', function(source, data)
     return rows or {}
 end)
 
-ps.registerCallback(resourceName .. ':server:createTag', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createTag', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -387,7 +387,7 @@ ps.registerCallback(resourceName .. ':server:createTag', function(source, payloa
     return { success = true, id = id }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateTag', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:updateTag', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -431,7 +431,7 @@ end)
 
 -- AWARDS MANAGEMENT -------------------------------------------
 
-ps.registerCallback(resourceName .. ':server:getAwardConfigs', function(source)
+Bridge.registerCallback(resourceName .. ':server:getAwardConfigs', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -456,7 +456,7 @@ ps.registerCallback(resourceName .. ':server:getAwardConfigs', function(source)
     return result
 end)
 
-ps.registerCallback(resourceName .. ':server:saveAward', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:saveAward', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -499,7 +499,7 @@ ps.registerCallback(resourceName .. ':server:saveAward', function(source, payloa
     return { success = true, id = id }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteAward', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteAward', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -513,16 +513,16 @@ ps.registerCallback(resourceName .. ':server:deleteAward', function(source, payl
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:getAwardsData', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:getAwardsData', function(source, payload)
     local src = source
     if not CheckAuth(src) then return nil end
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then return nil end
 
     -- Get officer info
-    local playerName = ps.getName(src) or 'Unknown'
-    local jobData = ps.getJobData(src)
+    local playerName = Bridge.getName(src) or 'Unknown'
+    local jobData = Bridge.getJobData(src)
     local callsign = ''
     local rank = ''
     if jobData then
@@ -696,7 +696,7 @@ end)
 
 -- CUSTOM LICENSES MANAGEMENT -------------------------------------------
 
-ps.registerCallback(resourceName .. ':server:getCustomLicenses', function(source)
+Bridge.registerCallback(resourceName .. ':server:getCustomLicenses', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -715,7 +715,7 @@ ps.registerCallback(resourceName .. ':server:getCustomLicenses', function(source
     return result
 end)
 
-ps.registerCallback(resourceName .. ':server:saveCustomLicense', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:saveCustomLicense', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -752,7 +752,7 @@ ps.registerCallback(resourceName .. ':server:saveCustomLicense', function(source
     return { success = true, id = id }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteCustomLicense', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteCustomLicense', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -766,7 +766,7 @@ ps.registerCallback(resourceName .. ':server:deleteCustomLicense', function(sour
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteTag', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteTag', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 

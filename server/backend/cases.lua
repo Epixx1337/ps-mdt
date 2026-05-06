@@ -17,15 +17,15 @@ local function normalizeStatus(status)
 end
 
 local function getOfficerDisplayName(src)
-    local callsign = ps.getMetadata(src, 'callsign')
-    local name = ps.getPlayerName(src) or 'Unknown'
+    local callsign = Bridge.getMetadata(src, 'callsign')
+    local name = Bridge.getPlayerName(src) or 'Unknown'
     if callsign and callsign ~= '' then
         return callsign .. ' ' .. name
     end
     return name
 end
 
-ps.registerCallback(resourceName .. ':server:createCase', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:createCase', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -34,9 +34,9 @@ ps.registerCallback(resourceName .. ':server:createCase', function(source, paylo
     local summary = payload.summary or ''
     local status = normalizeStatus(payload.status)
     local priority = payload.priority or 'medium'
-    local department = payload.department or ps.getJobName(src) or 'police'
+    local department = payload.department or Bridge.getJobName(src) or 'police'
 
-    local citizenid = ps.getIdentifier(src)
+    local citizenid = Bridge.getIdentifier(src)
     if not citizenid then
         return { success = false, error = 'Missing citizen id' }
     end
@@ -55,8 +55,8 @@ ps.registerCallback(resourceName .. ':server:createCase', function(source, paylo
     local caseNumber = buildCaseNumber(caseId)
     MySQL.update.await('UPDATE mdt_cases SET case_number = ? WHERE id = ?', { caseNumber, caseId })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_created', 'case', caseId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_created', 'case', caseId, {
             title = title,
             status = status,
             priority = priority
@@ -70,7 +70,7 @@ ps.registerCallback(resourceName .. ':server:createCase', function(source, paylo
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:getCases', function(source, page, filters)
+Bridge.registerCallback(resourceName .. ':server:getCases', function(source, page, filters)
     local src = source
     if not CheckAuth(src) then return { cases = {}, hasMore = false } end
 
@@ -120,7 +120,7 @@ ps.registerCallback(resourceName .. ':server:getCases', function(source, page, f
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:getCase', function(source, caseId)
+Bridge.registerCallback(resourceName .. ':server:getCase', function(source, caseId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -178,7 +178,7 @@ ps.registerCallback(resourceName .. ':server:getCase', function(source, caseId)
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:linkReportToCase', function(source, reportId, caseId)
+Bridge.registerCallback(resourceName .. ':server:linkReportToCase', function(source, reportId, caseId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -197,12 +197,12 @@ ps.registerCallback(resourceName .. ':server:linkReportToCase', function(source,
     MySQL.insert.await([[
         INSERT IGNORE INTO mdt_case_reports (case_id, report_id, linked_by)
         VALUES (?, ?, ?)
-    ]], { caseId, reportId, ps.getIdentifier(src) })
+    ]], { caseId, reportId, Bridge.getIdentifier(src) })
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:unlinkReportFromCase', function(source, reportId, caseId)
+Bridge.registerCallback(resourceName .. ':server:unlinkReportFromCase', function(source, reportId, caseId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -216,7 +216,7 @@ ps.registerCallback(resourceName .. ':server:unlinkReportFromCase', function(sou
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:getCaseEvidencePage', function(source, caseId, page, limit)
+Bridge.registerCallback(resourceName .. ':server:getCaseEvidencePage', function(source, caseId, page, limit)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -283,7 +283,7 @@ ps.registerCallback(resourceName .. ':server:getCaseEvidencePage', function(sour
     }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateCase', function(source, caseId, payload)
+Bridge.registerCallback(resourceName .. ':server:updateCase', function(source, caseId, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -335,14 +335,14 @@ ps.registerCallback(resourceName .. ':server:updateCase', function(source, caseI
         return { success = false, error = 'Failed to update case' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_updated', 'case', caseId, payload)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_updated', 'case', caseId, payload)
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteCase', function(source, caseId)
+Bridge.registerCallback(resourceName .. ':server:deleteCase', function(source, caseId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -358,8 +358,8 @@ ps.registerCallback(resourceName .. ':server:deleteCase', function(source, caseI
         return { success = false, error = 'Failed to delete case' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_deleted', 'case', caseId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_deleted', 'case', caseId, {
             title = caseRow and caseRow.title or ''
         })
     end
@@ -367,7 +367,7 @@ ps.registerCallback(resourceName .. ':server:deleteCase', function(source, caseI
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:assignCaseOfficer', function(source, caseId, officerCitizenId, role)
+Bridge.registerCallback(resourceName .. ':server:assignCaseOfficer', function(source, caseId, officerCitizenId, role)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -381,14 +381,14 @@ ps.registerCallback(resourceName .. ':server:assignCaseOfficer', function(source
     local insertId = MySQL.insert.await([[
         INSERT INTO mdt_case_officers (case_id, citizenid, role, assigned_by)
         VALUES (?, ?, ?, ?)
-    ]], { caseId, officerCitizenId, role, ps.getIdentifier(src) })
+    ]], { caseId, officerCitizenId, role, Bridge.getIdentifier(src) })
 
     if not insertId then
         return { success = false, error = 'Failed to assign officer' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_officer_assigned', 'case', caseId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_officer_assigned', 'case', caseId, {
             officer = officerCitizenId,
             role = role
         })
@@ -397,7 +397,7 @@ ps.registerCallback(resourceName .. ':server:assignCaseOfficer', function(source
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:removeCaseOfficer', function(source, caseId, officerCitizenId)
+Bridge.registerCallback(resourceName .. ':server:removeCaseOfficer', function(source, caseId, officerCitizenId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -414,8 +414,8 @@ ps.registerCallback(resourceName .. ':server:removeCaseOfficer', function(source
         return { success = false, error = 'Failed to remove officer' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_officer_removed', 'case', caseId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_officer_removed', 'case', caseId, {
             officer = officerCitizenId
         })
     end
@@ -423,7 +423,7 @@ ps.registerCallback(resourceName .. ':server:removeCaseOfficer', function(source
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:addCaseAttachment', function(source, caseId, attachment)
+Bridge.registerCallback(resourceName .. ':server:addCaseAttachment', function(source, caseId, attachment)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -440,21 +440,21 @@ ps.registerCallback(resourceName .. ':server:addCaseAttachment', function(source
         attachment.type or 'document',
         attachment.url,
         attachment.label or '',
-        ps.getIdentifier(src)
+        Bridge.getIdentifier(src)
     })
 
     if not attachmentId then
         return { success = false, error = 'Failed to add attachment' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_attachment_added', 'case', caseId, attachment)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_attachment_added', 'case', caseId, attachment)
     end
 
     return { success = true, id = attachmentId }
 end)
 
-ps.registerCallback(resourceName .. ':server:addCaseAttachmentUpload', function(source, caseId, attachment)
+Bridge.registerCallback(resourceName .. ':server:addCaseAttachmentUpload', function(source, caseId, attachment)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -499,15 +499,15 @@ ps.registerCallback(resourceName .. ':server:addCaseAttachmentUpload', function(
         attachmentType,
         publicUrl,
         label,
-        ps.getIdentifier(src)
+        Bridge.getIdentifier(src)
     })
 
     if not attachmentId then
         return { success = false, error = 'Failed to save attachment' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_attachment_uploaded', 'case', caseId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_attachment_uploaded', 'case', caseId, {
             label = label,
             url = publicUrl,
             contentType = contentType
@@ -517,7 +517,7 @@ ps.registerCallback(resourceName .. ':server:addCaseAttachmentUpload', function(
     return { success = true, id = attachmentId, url = publicUrl }
 end)
 
-ps.registerCallback(resourceName .. ':server:removeCaseAttachment', function(source, attachmentId)
+Bridge.registerCallback(resourceName .. ':server:removeCaseAttachment', function(source, attachmentId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -540,8 +540,8 @@ ps.registerCallback(resourceName .. ':server:removeCaseAttachment', function(sou
         end
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'case_attachment_removed', 'case_attachment', attachmentId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'case_attachment_removed', 'case_attachment', attachmentId, {
             caseId = attachment and attachment.case_id or nil
         })
     end
@@ -549,7 +549,7 @@ ps.registerCallback(resourceName .. ':server:removeCaseAttachment', function(sou
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:addEvidenceItem', function(source, caseId, evidence)
+Bridge.registerCallback(resourceName .. ':server:addEvidenceItem', function(source, caseId, evidence)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -571,8 +571,8 @@ ps.registerCallback(resourceName .. ':server:addEvidenceItem', function(source, 
         evidence.location or '',
         evidence.stashId or '',
         evidence.stored and 1 or 0,
-        ps.getIdentifier(src),
-        ps.getIdentifier(src)
+        Bridge.getIdentifier(src),
+        Bridge.getIdentifier(src)
     })
 
     if not evidenceId then
@@ -582,10 +582,10 @@ ps.registerCallback(resourceName .. ':server:addEvidenceItem', function(source, 
     MySQL.insert.await([[
         INSERT INTO mdt_evidence_custody (evidence_id, from_citizenid, to_citizenid, action, notes)
         VALUES (?, ?, ?, 'collected', ?)
-    ]], { evidenceId, nil, ps.getIdentifier(src), evidence.notes or '' })
+    ]], { evidenceId, nil, Bridge.getIdentifier(src), evidence.notes or '' })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'evidence_added', 'evidence', evidenceId, evidence)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'evidence_added', 'evidence', evidenceId, evidence)
     end
 
     return { success = true, id = evidenceId }
@@ -593,7 +593,7 @@ end)
 
 -- addEvidenceImage handler is in evidence.lua (not duplicated here)
 
-ps.registerCallback(resourceName .. ':server:removeEvidenceImage', function(source, imageId)
+Bridge.registerCallback(resourceName .. ':server:removeEvidenceImage', function(source, imageId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -615,8 +615,8 @@ ps.registerCallback(resourceName .. ':server:removeEvidenceImage', function(sour
         end
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'evidence_image_removed', 'evidence_image', imageId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'evidence_image_removed', 'evidence_image', imageId, {
             evidenceId = image and image.evidence_id or nil
         })
     end
@@ -624,7 +624,7 @@ ps.registerCallback(resourceName .. ':server:removeEvidenceImage', function(sour
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:updateEvidenceItem', function(source, evidenceId, evidence)
+Bridge.registerCallback(resourceName .. ':server:updateEvidenceItem', function(source, evidenceId, evidence)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -670,7 +670,7 @@ ps.registerCallback(resourceName .. ':server:updateEvidenceItem', function(sourc
     end
 
     updates[#updates + 1] = 'last_holder = ?'
-    values[#values + 1] = ps.getIdentifier(src)
+    values[#values + 1] = Bridge.getIdentifier(src)
 
     values[#values + 1] = evidenceId
 
@@ -682,16 +682,16 @@ ps.registerCallback(resourceName .. ':server:updateEvidenceItem', function(sourc
     MySQL.insert.await([[
         INSERT INTO mdt_evidence_custody (evidence_id, from_citizenid, to_citizenid, action, notes)
         VALUES (?, ?, ?, 'updated', ?)
-    ]], { evidenceId, nil, ps.getIdentifier(src), evidence.notes or '' })
+    ]], { evidenceId, nil, Bridge.getIdentifier(src), evidence.notes or '' })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'evidence_updated', 'evidence', evidenceId, evidence)
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'evidence_updated', 'evidence', evidenceId, evidence)
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:transferEvidenceItem', function(source, evidenceId, toCitizenId, notes)
+Bridge.registerCallback(resourceName .. ':server:transferEvidenceItem', function(source, evidenceId, toCitizenId, notes)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -700,7 +700,7 @@ ps.registerCallback(resourceName .. ':server:transferEvidenceItem', function(sou
         return { success = false, error = 'Invalid evidence transfer' }
     end
 
-    local fromCitizenId = ps.getIdentifier(src)
+    local fromCitizenId = Bridge.getIdentifier(src)
     MySQL.update.await('UPDATE mdt_evidence_items SET last_holder = ? WHERE id = ?', { toCitizenId, evidenceId })
 
     MySQL.insert.await([[
@@ -708,8 +708,8 @@ ps.registerCallback(resourceName .. ':server:transferEvidenceItem', function(sou
         VALUES (?, ?, ?, 'transferred', ?)
     ]], { evidenceId, fromCitizenId, toCitizenId, notes or '' })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'evidence_transferred', 'evidence', evidenceId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'evidence_transferred', 'evidence', evidenceId, {
             to = toCitizenId,
             notes = notes
         })
@@ -718,7 +718,7 @@ ps.registerCallback(resourceName .. ':server:transferEvidenceItem', function(sou
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:deleteEvidenceItem', function(source, evidenceId)
+Bridge.registerCallback(resourceName .. ':server:deleteEvidenceItem', function(source, evidenceId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -732,14 +732,14 @@ ps.registerCallback(resourceName .. ':server:deleteEvidenceItem', function(sourc
         return { success = false, error = 'Failed to delete evidence' }
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, 'evidence_deleted', 'evidence', evidenceId, {})
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'evidence_deleted', 'evidence', evidenceId, {})
     end
 
     return { success = true }
 end)
 
-ps.registerCallback(resourceName .. ':server:getEvidenceCustody', function(source, evidenceId)
+Bridge.registerCallback(resourceName .. ':server:getEvidenceCustody', function(source, evidenceId)
     local src = source
     if not CheckAuth(src) then return {} end
 
@@ -759,7 +759,7 @@ ps.registerCallback(resourceName .. ':server:getEvidenceCustody', function(sourc
 end)
 
 -- Add a note to a case
-ps.registerCallback(resourceName .. ':server:addCaseNote', function(source, caseId, content)
+Bridge.registerCallback(resourceName .. ':server:addCaseNote', function(source, caseId, content)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 
@@ -768,7 +768,7 @@ ps.registerCallback(resourceName .. ':server:addCaseNote', function(source, case
         return { success = false, error = 'Invalid case or empty note' }
     end
 
-    local citizenId = ps.getIdentifier(src)
+    local citizenId = Bridge.getIdentifier(src)
     local profile = MySQL.single.await('SELECT fullname FROM mdt_profiles WHERE citizenid = ?', { citizenId })
     local authorName = profile and profile.fullname or 'Unknown'
 
@@ -781,7 +781,7 @@ ps.registerCallback(resourceName .. ':server:addCaseNote', function(source, case
 end)
 
 -- Delete a note from a case
-ps.registerCallback(resourceName .. ':server:deleteCaseNote', function(source, noteId, caseId)
+Bridge.registerCallback(resourceName .. ':server:deleteCaseNote', function(source, noteId, caseId)
     local src = source
     if not CheckAuth(src) then return { success = false, error = 'Unauthorized' } end
 

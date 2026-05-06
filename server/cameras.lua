@@ -54,12 +54,12 @@ Camera.types = {
 ---@return table? Camera instance or nil if creation failed
 function Camera.new(camId, camType, camLabel, options)
     if not camId or not camType then
-        ps.error('Camera.new: camId and camType are required')
+        Bridge.error('Camera.new: camId and camType are required')
         return nil
     end
 
     if not Camera.types[camType] and camType ~= Camera.types.bodycam and camType ~= Camera.types.static then
-        ps.error('Camera.new: Invalid camera type. Must be "bodycam" or "static"')
+        Bridge.error('Camera.new: Invalid camera type. Must be "bodycam" or "static"')
         return nil
     end
 
@@ -91,12 +91,12 @@ function Camera.new(camId, camType, camLabel, options)
 
         -- Validate model exists
         if not Camera.models[newCameraInstance.model] then
-            ps.warn('Camera.new: Unknown model "' .. newCameraInstance.model .. '", using default')
+            Bridge.warn('Camera.new: Unknown model "' .. newCameraInstance.model .. '", using default')
             newCameraInstance.model = 'security_cam_03'
         end
     end
 
-    --ps.debug('Camera.new: Creating new camera instance with ID ' .. camId)
+    --Bridge.debug('Camera.new: Creating new camera instance with ID ' .. camId)
     setmetatable(newCameraInstance, Camera)
     return newCameraInstance
 end
@@ -117,32 +117,32 @@ function Camera:spawn()
         if self.playerId then
             -- bodycam item checks handled in backend/bodycams.lua
             self.isSpawned = true
-            ps.debug('Camera:spawn - Bodycam marked as available for player ' .. self.playerId)
+            Bridge.debug('Camera:spawn - Bodycam marked as available for player ' .. self.playerId)
             return true
         end
         return false
     elseif self.camType == Camera.types.static then
         if self.isSpawned then
-            ps.warn('Camera:spawn - Camera ' .. self.camId .. ' is already spawned')
+            Bridge.warn('Camera:spawn - Camera ' .. self.camId .. ' is already spawned')
             return true
         end
 
         local modelName = self:getModelHash()
         if not modelName then
-            ps.error('Camera:spawn - Could not get model hash for camera ' .. self.camId)
+            Bridge.error('Camera:spawn - Could not get model hash for camera ' .. self.camId)
             return false
         end
 
         local modelHash = GetHashKey(modelName)
-        -- ps.debug('Camera:spawn - Requesting model: ' .. modelName .. ' (hash: ' .. modelHash .. ')')
-        -- ps.debug('Camera:spawn - Spawning at coordinates: ' .. tostring(self.coords))
-        -- ps.debug('Camera:spawn - Spawning with rotation: ' .. tostring(self.rotation))
+        -- Bridge.debug('Camera:spawn - Requesting model: ' .. modelName .. ' (hash: ' .. modelHash .. ')')
+        -- Bridge.debug('Camera:spawn - Spawning at coordinates: ' .. tostring(self.coords))
+        -- Bridge.debug('Camera:spawn - Spawning with rotation: ' .. tostring(self.rotation))
 
         -- Create the object
         local entity = CreateObject(modelHash, self.coords.x, self.coords.y, self.coords.z, true, true, false)
 
         if not entity or entity == 0 then
-            ps.error('Camera:spawn - Failed to create entity for camera ' .. self.camId)
+            Bridge.error('Camera:spawn - Failed to create entity for camera ' .. self.camId)
             return false
         end
 
@@ -160,7 +160,7 @@ function Camera:spawn()
         end
 
         if networkingTimeout >= 50 then
-            ps.error('Camera:spawn - Entity failed to network properly after timeout for camera ' .. self.camId)
+            Bridge.error('Camera:spawn - Entity failed to network properly after timeout for camera ' .. self.camId)
             DeleteEntity(entity)
             return false
         end
@@ -168,8 +168,8 @@ function Camera:spawn()
         -- debug info
         -- local actualPos = GetEntityCoords(entity)
         -- local actualRot = GetEntityRotation(entity, 2)
-        -- ps.debug('Camera:spawn - Entity actual position after creation: ' .. tostring(actualPos))
-        -- ps.debug('Camera:spawn - Entity actual rotation after creation: ' .. tostring(actualRot))
+        -- Bridge.debug('Camera:spawn - Entity actual position after creation: ' .. tostring(actualPos))
+        -- Bridge.debug('Camera:spawn - Entity actual rotation after creation: ' .. tostring(actualRot))
 
         -- Store the entity ID and register in global registry
         self.entityId = entity
@@ -186,11 +186,11 @@ end
 function Camera:despawn()
     if self.camType == Camera.types.bodycam then
         self.isSpawned = false -- For bodycams, just mark as not spawned
-        ps.debug('Camera:despawn - Bodycam removed for player ' .. (self.playerId or 'unknown'))
+        Bridge.debug('Camera:despawn - Bodycam removed for player ' .. (self.playerId or 'unknown'))
         return true
     elseif self.camType == Camera.types.static then
         if not self.isSpawned then
-            --ps.warn('Camera:despawn - Camera ' .. self.camId .. ' is not spawned')
+            --Bridge.warn('Camera:despawn - Camera ' .. self.camId .. ' is not spawned')
             return true
         end
 
@@ -199,14 +199,14 @@ function Camera:despawn()
 
         -- Delete the entity if it exists
         if self.entityId and DoesEntityExist(self.entityId) then
-            --ps.debug('Camera:despawn - Deleting entity ' .. self.entityId .. ' for camera ' .. self.camId)
+            --Bridge.debug('Camera:despawn - Deleting entity ' .. self.entityId .. ' for camera ' .. self.camId)
             DeleteEntity(self.entityId)
         end
 
         spawnedCameras[self.camId] = nil
         self.entityId = nil
         self.isSpawned = false
-        --ps.debug('Camera:despawn - Despawned static camera ' .. self.camId)
+        --Bridge.debug('Camera:despawn - Despawned static camera ' .. self.camId)
         return true
     end
     return false
@@ -216,29 +216,29 @@ end
 ---@param playerId number Player server ID who wants to view the camera
 ---@return boolean Success status
 function Camera:activate(playerId)
-    ps.debug('Camera:activate called for player:', playerId, 'on camera:', self.camId)
+    Bridge.debug('Camera:activate called for player:', playerId, 'on camera:', self.camId)
     if not playerId then
-        ps.error('Camera:activate - playerId is required')
+        Bridge.error('Camera:activate - playerId is required')
         return false
     end
 
     if self.camType == Camera.types.bodycam then
         -- Check if the bodycam owner is online and has the item
         if not self.playerId or not GetPlayerPed(self.playerId) then
-            ps.warn('Camera:activate - Bodycam owner is not online')
+            Bridge.warn('Camera:activate - Bodycam owner is not online')
             return false
         end
 
         -- bodycam power/permission checks handled in backend/bodycams.lua
 
         if not self.isSpawned then
-            ps.warn('Camera:activate - Bodycam is not available')
+            Bridge.warn('Camera:activate - Bodycam is not available')
             return false
         end
 
     elseif self.camType == Camera.types.static then
         if not self.isSpawned then
-            ps.warn('Camera:activate - Static camera is not spawned')
+            Bridge.warn('Camera:activate - Static camera is not spawned')
             return false
         end
     end
@@ -247,9 +247,9 @@ function Camera:activate(playerId)
     if not self.activeViewers[playerId] then
         self.activeViewers[playerId] = {
             startTime = os.time(),
-            playerName = ps.getPlayerName(playerId) or 'Unknown'
+            playerName = Bridge.getPlayerName(playerId) or 'Unknown'
         }
-        ps.debug('Camera:activate - Player ' .. playerId .. ' started viewing camera ' .. self.camId)
+        Bridge.debug('Camera:activate - Player ' .. playerId .. ' started viewing camera ' .. self.camId)
 
         TriggerClientEvent(resourceName..':client:startCameraView', playerId, self:getData())
 
@@ -258,7 +258,7 @@ function Camera:activate(playerId)
 
         return true
     else
-        ps.warn('Camera:activate - Player ' .. playerId .. ' is already viewing camera ' .. self.camId)
+        Bridge.warn('Camera:activate - Player ' .. playerId .. ' is already viewing camera ' .. self.camId)
         return false
     end
 end
@@ -268,13 +268,13 @@ end
 ---@return boolean Success status
 function Camera:deactivate(playerId)
     if not playerId then
-        ps.error('Camera:deactivate - playerId is required')
+        Bridge.error('Camera:deactivate - playerId is required')
         return false
     end
 
     if self.activeViewers[playerId] then
         local viewDuration = os.time() - self.activeViewers[playerId].startTime
-        ps.debug('Camera:deactivate - Player ' .. playerId .. ' stopped viewing camera ' .. self.camId .. ' after ' .. viewDuration .. ' seconds')
+        Bridge.debug('Camera:deactivate - Player ' .. playerId .. ' stopped viewing camera ' .. self.camId .. ' after ' .. viewDuration .. ' seconds')
 
         self.activeViewers[playerId] = nil
 
@@ -285,7 +285,7 @@ function Camera:deactivate(playerId)
 
         return true
     else
-        ps.warn('Camera:deactivate - Player ' .. playerId .. ' is not viewing camera ' .. self.camId)
+        Bridge.warn('Camera:deactivate - Player ' .. playerId .. ' is not viewing camera ' .. self.camId)
         return false
     end
 end
@@ -335,12 +335,12 @@ end
 ---@return boolean Success status
 function Camera:toggleBodycamPower(playerId, powered)
     if self.camType ~= Camera.types.bodycam then
-        ps.error('Camera:toggleBodycamPower - Can only be used on bodycams')
+        Bridge.error('Camera:toggleBodycamPower - Can only be used on bodycams')
         return false
     end
 
     if self.playerId ~= playerId then
-        ps.error('Camera:toggleBodycamPower - Player does not own this bodycam')
+        Bridge.error('Camera:toggleBodycamPower - Player does not own this bodycam')
         return false
     end
 
@@ -378,7 +378,7 @@ function Camera:getData()
     if self.camType == Camera.types.bodycam then
         data.playerId = self.playerId
         data.note = self.note
-        data.playerName = self.playerId and (ps.getPlayerName(self.playerId) or GetPlayerName(self.playerId)) or 'Unknown'
+        data.playerName = self.playerId and (Bridge.getPlayerName(self.playerId) or GetPlayerName(self.playerId)) or 'Unknown'
     elseif self.camType == Camera.types.static then
         data.model = self.model
         data.modelHash = self:getModelHash()
@@ -389,10 +389,10 @@ function Camera:getData()
         -- Convert entity ID to network ID for client-server communication
         if self.entityId and DoesEntityExist(self.entityId) then
             data.networkId = NetworkGetNetworkIdFromEntity(self.entityId)
-            ps.debug('Camera:getData - Entity ID:', self.entityId, 'Network ID:', data.networkId)
+            Bridge.debug('Camera:getData - Entity ID:', self.entityId, 'Network ID:', data.networkId)
         else
             data.networkId = nil
-            ps.warn('Camera:getData - Entity does not exist, cannot get network ID')
+            Bridge.warn('Camera:getData - Entity does not exist, cannot get network ID')
         end
     end
 
@@ -418,7 +418,7 @@ function Camera:update(updates)
             self.model = updates.model
             -- If model changes and camera is spawned, it needs to be respawned
             if self.isSpawned and oldModel ~= self.model then
-                ps.debug('Camera:update - Model changed, respawning camera')
+                Bridge.debug('Camera:update - Model changed, respawning camera')
                 self:despawn()
                 self:spawn()
             end
@@ -504,7 +504,7 @@ end
 ---@return boolean Success status
 function Camera:saveToDatabase()
     if self.camType ~= Camera.types.static then
-        ps.warn('Camera:saveToDatabase - Only static cameras can be saved to database')
+        Bridge.warn('Camera:saveToDatabase - Only static cameras can be saved to database')
         return false
     end
 
@@ -531,10 +531,10 @@ function Camera:saveToDatabase()
     })
 
     if success then
-        ps.debug('Camera:saveToDatabase - Saved camera ' .. self.camId .. ' to database')
+        Bridge.debug('Camera:saveToDatabase - Saved camera ' .. self.camId .. ' to database')
         return true
     else
-        ps.error('Camera:saveToDatabase - Failed to save camera ' .. self.camId .. ' to database')
+        Bridge.error('Camera:saveToDatabase - Failed to save camera ' .. self.camId .. ' to database')
         return false
     end
 end
@@ -543,7 +543,7 @@ end
 ---@return boolean Success status
 function Camera:deleteFromDatabase()
     if self.camType ~= Camera.types.static then
-        ps.warn('Camera:deleteFromDatabase - Only static cameras can be deleted from database')
+        Bridge.warn('Camera:deleteFromDatabase - Only static cameras can be deleted from database')
         return false
     end
 
@@ -551,10 +551,10 @@ function Camera:deleteFromDatabase()
     local success = MySQL.query.await(query, { self.camId })
 
     if success then
-        ps.debug('Camera:deleteFromDatabase - Deleted camera ' .. self.camId .. ' from database')
+        Bridge.debug('Camera:deleteFromDatabase - Deleted camera ' .. self.camId .. ' from database')
         return true
     else
-        ps.error('Camera:deleteFromDatabase - Failed to delete camera ' .. self.camId .. ' from database')
+        Bridge.error('Camera:deleteFromDatabase - Failed to delete camera ' .. self.camId .. ' from database')
         return false
     end
 end
@@ -568,7 +568,7 @@ function Camera.loadAllFromDatabase()
     local results = MySQL.query.await(query)
 
     if not results then
-        ps.debug('Camera.loadAllFromDatabase - No cameras found in database')
+        Bridge.debug('Camera.loadAllFromDatabase - No cameras found in database')
         return cameras
     end
 
@@ -595,20 +595,20 @@ function Camera.loadAllFromDatabase()
 
             if camera.camTypeDb == 'placed' or camera.spawnsModel then
                 camera:spawn()
-                --ps.debug('Camera.loadAllFromDatabase - Loaded and spawned physical camera ' .. row.cam_id .. ' (type: ' .. camera.camTypeDb .. ')')
+                --Bridge.debug('Camera.loadAllFromDatabase - Loaded and spawned physical camera ' .. row.cam_id .. ' (type: ' .. camera.camTypeDb .. ')')
             else
                 camera.isSpawned = true
-                --ps.debug('Camera.loadAllFromDatabase - Loaded virtual camera ' .. row.cam_id .. ' (type: ' .. camera.camTypeDb .. ', no model spawned)')
+                --Bridge.debug('Camera.loadAllFromDatabase - Loaded virtual camera ' .. row.cam_id .. ' (type: ' .. camera.camTypeDb .. ', no model spawned)')
             end
 
             cameras[row.cam_id] = camera
             spawnedCameras[row.cam_id] = camera
         else
-            ps.error('Camera.loadAllFromDatabase - Failed to create camera ' .. row.cam_id)
+            Bridge.error('Camera.loadAllFromDatabase - Failed to create camera ' .. row.cam_id)
         end
     end
 
-    --ps.info('Camera.loadAllFromDatabase - Loaded ' .. #cameras .. ' cameras from database')
+    --Bridge.info('Camera.loadAllFromDatabase - Loaded ' .. #cameras .. ' cameras from database')
     return cameras
 end
 
@@ -619,26 +619,26 @@ RegisterNetEvent(resourceName .. ':server:createStaticCamera', function(cameraDa
     local playerId = source
     if not CheckAuth(playerId) then return end
 
-    ps.debug('Creating static camera for player:', playerId)
-    ps.debug('Received camera data:')
-    ps.debug('  camId: ' .. tostring(cameraData.camId))
-    ps.debug('  coords: ' .. tostring(cameraData.coords))
-    ps.debug('  rotation: ' .. tostring(cameraData.rotation))
+    Bridge.debug('Creating static camera for player:', playerId)
+    Bridge.debug('Received camera data:')
+    Bridge.debug('  camId: ' .. tostring(cameraData.camId))
+    Bridge.debug('  coords: ' .. tostring(cameraData.coords))
+    Bridge.debug('  rotation: ' .. tostring(cameraData.rotation))
 
     if not cameraData or type(cameraData) ~= 'table' then
-        ps.error('Camera creation failed - invalid data from player:', playerId)
+        Bridge.error('Camera creation failed - invalid data from player:', playerId)
         return
     end
 
     -- Validate required fields
     if not cameraData.camId or not cameraData.camLabel or not cameraData.model or not cameraData.coords then
-        ps.error('Camera creation failed - missing required fields for player:', playerId)
+        Bridge.error('Camera creation failed - missing required fields for player:', playerId)
         return
     end
 
     -- Check if camera ID already exists
     if spawnedCameras[cameraData.camId] then
-        ps.error('Camera creation failed - camera ID already exists:', cameraData.camId, 'for player:', playerId)
+        Bridge.error('Camera creation failed - camera ID already exists:', cameraData.camId, 'for player:', playerId)
         return
     end
 
@@ -654,7 +654,7 @@ RegisterNetEvent(resourceName .. ':server:createStaticCamera', function(cameraDa
     -- Update camera with additional properties if created successfully
     if camera then
         -- Set creation metadata
-        camera.createdBy = ps.getIdentifier(playerId)
+        camera.createdBy = Bridge.getIdentifier(playerId)
         camera.createdAt = os.time() * 1000 -- Convert to milliseconds
 
         -- Set camera type and spawning behavior for player-placed cameras
@@ -671,22 +671,22 @@ RegisterNetEvent(resourceName .. ':server:createStaticCamera', function(cameraDa
         -- Spawn the camera immediately
         local spawnSuccess = camera:spawn()
         if spawnSuccess then
-            ps.info('Camera created and spawned successfully:', cameraData.camId)
+            Bridge.info('Camera created and spawned successfully:', cameraData.camId)
         else
-            ps.warn('Camera created but failed to spawn:', cameraData.camId)
+            Bridge.warn('Camera created but failed to spawn:', cameraData.camId)
         end
 
         -- Save to database
         local dbSaveSuccess = camera:saveToDatabase()
         if dbSaveSuccess then
-            ps.info('Camera saved to database successfully:', cameraData.camId)
+            Bridge.info('Camera saved to database successfully:', cameraData.camId)
         else
-            ps.error('Camera created but failed to save to database:', cameraData.camId)
+            Bridge.error('Camera created but failed to save to database:', cameraData.camId)
         end
 
-        ps.debug('Camera created successfully:', cameraData.camId)
+        Bridge.debug('Camera created successfully:', cameraData.camId)
     else
-        ps.error('Failed to create camera:', cameraData.camId)
+        Bridge.error('Failed to create camera:', cameraData.camId)
     end
 end)
 
@@ -694,7 +694,7 @@ end)
 RegisterNetEvent(resourceName .. ':server:requestCameraList', function()
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Sending camera list to player:', playerId)
+    Bridge.debug('Sending camera list to player:', playerId)
 
     local cameraList = {}
     for camId, camera in pairs(spawnedCameras) do
@@ -716,24 +716,24 @@ end)
 RegisterNetEvent(resourceName .. ':server:spawnCamera', function(camId)
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Spawning camera for player:', playerId, 'Camera ID:', camId)
+    Bridge.debug('Spawning camera for player:', playerId, 'Camera ID:', camId)
 
     local camera = spawnedCameras[camId]
     if not camera then
-        ps.error('Camera spawn failed - camera not found:', camId, 'for player:', playerId)
+        Bridge.error('Camera spawn failed - camera not found:', camId, 'for player:', playerId)
         return
     end
 
     if camera.isSpawned then
-        ps.error('Camera spawn failed - camera already spawned:', camId, 'for player:', playerId)
+        Bridge.error('Camera spawn failed - camera already spawned:', camId, 'for player:', playerId)
         return
     end
 
     local success = camera:spawn()
     if success then
-        ps.info('Camera spawned successfully:', camId, 'for player:', playerId)
+        Bridge.info('Camera spawned successfully:', camId, 'for player:', playerId)
     else
-        ps.error('Camera spawn failed - could not spawn camera:', camId, 'for player:', playerId)
+        Bridge.error('Camera spawn failed - could not spawn camera:', camId, 'for player:', playerId)
     end
 end)
 
@@ -741,37 +741,37 @@ end)
 RegisterNetEvent(resourceName .. ':server:despawnCamera', function(camId)
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Despawning camera for player:', playerId, 'Camera ID:', camId)
+    Bridge.debug('Despawning camera for player:', playerId, 'Camera ID:', camId)
 
     local camera = spawnedCameras[camId]
     if not camera then
-        ps.error('Camera despawn failed - camera not found:', camId, 'for player:', playerId)
+        Bridge.error('Camera despawn failed - camera not found:', camId, 'for player:', playerId)
         return
     end
 
     if not camera.isSpawned then
-        ps.error('Camera despawn failed - camera is not spawned:', camId, 'for player:', playerId)
+        Bridge.error('Camera despawn failed - camera is not spawned:', camId, 'for player:', playerId)
         return
     end
 
     camera:despawn()
-    ps.info('Camera despawned successfully:', camId, 'for player:', playerId)
+    Bridge.info('Camera despawned successfully:', camId, 'for player:', playerId)
 end)
 
 -- Handle camera activation request from client
 RegisterNetEvent(resourceName .. ':server:activateCamera', function(camId)
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Activating camera for player:', playerId, 'Camera ID:', camId)
+    Bridge.debug('Activating camera for player:', playerId, 'Camera ID:', camId)
 
     local camera = spawnedCameras[camId]
     if not camera then
-        ps.error('Camera activation failed - camera not found:', camId, 'for player:', playerId)
+        Bridge.error('Camera activation failed - camera not found:', camId, 'for player:', playerId)
         return
     end
 
     if not camera.isSpawned then
-        ps.error('Camera activation failed - camera must be spawned first:', camId, 'for player:', playerId)
+        Bridge.error('Camera activation failed - camera must be spawned first:', camId, 'for player:', playerId)
         return
     end
 
@@ -788,9 +788,9 @@ RegisterNetEvent(resourceName .. ':server:activateCamera', function(camId)
     if success then
         -- Track which camera this player is viewing (activate() already fires startCameraView to client)
         playerViewingCamera[playerId] = camId
-        ps.info('Player ' .. playerId .. ' is now viewing camera: ' .. camId .. ' (Entity: ' .. tostring(camera.entityId) .. ')')
+        Bridge.info('Player ' .. playerId .. ' is now viewing camera: ' .. camId .. ' (Entity: ' .. tostring(camera.entityId) .. ')')
     else
-        ps.error('Camera activation failed - could not activate camera:', camId, 'for player:', playerId)
+        Bridge.error('Camera activation failed - could not activate camera:', camId, 'for player:', playerId)
     end
 end)
 
@@ -798,20 +798,20 @@ end)
 RegisterNetEvent(resourceName .. ':server:deactivateCamera', function(camId)
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Deactivating camera for player:', playerId, 'Camera ID:', camId)
+    Bridge.debug('Deactivating camera for player:', playerId, 'Camera ID:', camId)
 
     -- Handle special case where client sends 'current' to deactivate whatever they're viewing
     if camId == 'current' then
         camId = playerViewingCamera[playerId]
         if not camId then
-            ps.error('Camera deactivation failed - player is not viewing any camera:', playerId)
+            Bridge.error('Camera deactivation failed - player is not viewing any camera:', playerId)
             return
         end
     end
 
     local camera = spawnedCameras[camId]
     if not camera then
-        ps.error('Camera deactivation failed - camera not found:', camId, 'for player:', playerId)
+        Bridge.error('Camera deactivation failed - camera not found:', camId, 'for player:', playerId)
         return
     end
 
@@ -822,9 +822,9 @@ RegisterNetEvent(resourceName .. ':server:deactivateCamera', function(camId)
 
         -- Stop camera view on client
         TriggerClientEvent(resourceName .. ':client:stopCameraView', playerId)
-        ps.info('Player ' .. playerId .. ' stopped viewing camera: ' .. camId)
+        Bridge.info('Player ' .. playerId .. ' stopped viewing camera: ' .. camId)
     else
-        ps.error('Camera deactivation failed - player was not viewing this camera:', camId, 'for player:', playerId)
+        Bridge.error('Camera deactivation failed - player was not viewing this camera:', camId, 'for player:', playerId)
     end
 end)
 
@@ -832,11 +832,11 @@ end)
 RegisterNetEvent(resourceName .. ':server:deleteCamera', function(camId)
     local playerId = source
     if not CheckAuth(playerId) then return end
-    ps.debug('Deleting camera for player:', playerId, 'Camera ID:', camId)
+    Bridge.debug('Deleting camera for player:', playerId, 'Camera ID:', camId)
 
     local camera = spawnedCameras[camId]
     if not camera then
-        ps.error('Camera deletion failed - camera not found:', camId, 'for player:', playerId)
+        Bridge.error('Camera deletion failed - camera not found:', camId, 'for player:', playerId)
         return
     end
 
@@ -844,8 +844,8 @@ RegisterNetEvent(resourceName .. ':server:deleteCamera', function(camId)
     for viewerId, _ in pairs(camera.activeViewers) do
         camera:deactivate(viewerId)
         TriggerClientEvent(resourceName .. ':client:stopCameraView', viewerId)
-        ps.info('Deactivated camera for viewer:', viewerId)
-        ps.info('Camera Deleted: Camera "' .. camera.camLabel .. '" was deleted')
+        Bridge.info('Deactivated camera for viewer:', viewerId)
+        Bridge.info('Camera Deleted: Camera "' .. camera.camLabel .. '" was deleted')
     end
 
     -- Despawn and destroy
@@ -854,9 +854,9 @@ RegisterNetEvent(resourceName .. ':server:deleteCamera', function(camId)
     -- Remove from database
     local dbDeleteSuccess = camera:deleteFromDatabase()
     if dbDeleteSuccess then
-        ps.info('Camera removed from database successfully:', camId)
+        Bridge.info('Camera removed from database successfully:', camId)
     else
-        ps.error('Camera despawned but failed to remove from database:', camId)
+        Bridge.error('Camera despawned but failed to remove from database:', camId)
     end
 
     camera:destroy()
@@ -864,29 +864,29 @@ RegisterNetEvent(resourceName .. ':server:deleteCamera', function(camId)
     -- Remove from spawned cameras registry
     spawnedCameras[camId] = nil
 
-    ps.info('Camera deleted successfully:', camId, 'for player:', playerId)
+    Bridge.info('Camera deleted successfully:', camId, 'for player:', playerId)
 end)
 
 -- Handle camera update request from client
-ps.registerCallback(resourceName .. ':server:updateCamera', function(source, updateData)
+Bridge.registerCallback(resourceName .. ':server:updateCamera', function(source, updateData)
     local playerId = source
-    ps.debug('Updating camera for player:', playerId, 'Data:', updateData)
+    Bridge.debug('Updating camera for player:', playerId, 'Data:', updateData)
 
     if not updateData or type(updateData) ~= 'table' then
-        ps.error('Camera update failed - invalid data from player:', playerId)
+        Bridge.error('Camera update failed - invalid data from player:', playerId)
         return { success = false, error = 'Invalid update data' }
     end
 
     -- Validate required fields
     if not updateData.camId then
-        ps.error('Camera update failed - missing camera ID for player:', playerId)
+        Bridge.error('Camera update failed - missing camera ID for player:', playerId)
         return { success = false, error = 'Missing camera ID' }
     end
 
     -- Check if camera exists
     local camera = spawnedCameras[updateData.camId]
     if not camera then
-        ps.error('Camera update failed - camera not found:', updateData.camId, 'for player:', playerId)
+        Bridge.error('Camera update failed - camera not found:', updateData.camId, 'for player:', playerId)
         return { success = false, error = 'Camera not found' }
     end
 
@@ -907,11 +907,11 @@ ps.registerCallback(resourceName .. ':server:updateCamera', function(source, upd
     -- If camera was spawned and position/model changed, respawn it
     if wasSpawned and (updateData.coords or updateData.model) then
         if updateData.coords and (oldCoords.x ~= updateData.coords.x or oldCoords.y ~= updateData.coords.y or oldCoords.z ~= updateData.coords.z) then
-            ps.debug('Camera position changed, respawning camera:', updateData.camId)
+            Bridge.debug('Camera position changed, respawning camera:', updateData.camId)
             camera:despawn()
             camera:spawn()
         elseif updateData.model and oldModel ~= updateData.model then
-            ps.debug('Camera model changed, respawning camera:', updateData.camId)
+            Bridge.debug('Camera model changed, respawning camera:', updateData.camId)
             camera:despawn()
             camera:spawn()
         end
@@ -919,7 +919,7 @@ ps.registerCallback(resourceName .. ':server:updateCamera', function(source, upd
 
     camera:saveToDatabase()
 
-    ps.info('Camera updated successfully:', updateData.camId, 'for player:', playerId)
+    Bridge.info('Camera updated successfully:', updateData.camId, 'for player:', playerId)
     return { success = true }
 end)
 
@@ -957,7 +957,7 @@ function CleanupAllCameras()
             -- Count and deactivate all viewers
             local activeViewers = camera:getViewerCount()
             if activeViewers > 0 then
-                ps.debug('Deactivating ' .. activeViewers .. ' viewers for camera: ' .. camId)
+                Bridge.debug('Deactivating ' .. activeViewers .. ' viewers for camera: ' .. camId)
                 camera:deactivateAll()
                 viewerCount = viewerCount + activeViewers
 
@@ -982,14 +982,14 @@ function CleanupAllCameras()
     spawnedCameras = {}
     playerViewingCamera = {}
 
-    --ps.debug('Cleaned up ' .. count .. ' cameras and ' .. viewerCount .. ' active viewers')
+    --Bridge.debug('Cleaned up ' .. count .. ' cameras and ' .. viewerCount .. ' active viewers')
     return count
 end
 
 -- Callbacks ----------------------------
 
 -- Callback to get spawned cameras for the frontend
-ps.registerCallback(resourceName .. ':server:getCameras', function(source)
+Bridge.registerCallback(resourceName .. ':server:getCameras', function(source)
     local src = source
     if not CheckAuth(src) then
         return {}
@@ -1014,7 +1014,7 @@ ps.registerCallback(resourceName .. ':server:getCameras', function(source)
 end)
 
 -- Callback to start viewing a specific camera
-ps.registerCallback(resourceName .. ':server:viewCamera', function(source, cameraId)
+Bridge.registerCallback(resourceName .. ':server:viewCamera', function(source, cameraId)
     local src = source
     if not CheckAuth(src) then
         return { success = false, error = "Unauthorized" }
@@ -1026,7 +1026,7 @@ ps.registerCallback(resourceName .. ':server:viewCamera', function(source, camer
     end
 
     local success = camera:activate(src)
-    ps.debug('Camera activation success:', success, 'for camera:', cameraId, 'by source:', src)
+    Bridge.debug('Camera activation success:', success, 'for camera:', cameraId, 'by source:', src)
     if success then
         return {
             success = true,
@@ -1043,7 +1043,7 @@ ps.registerCallback(resourceName .. ':server:viewCamera', function(source, camer
 end)
 
 -- Callback to get available camera models
-ps.registerCallback(resourceName .. ':server:getCameraModels', function(source)
+Bridge.registerCallback(resourceName .. ':server:getCameraModels', function(source)
     local models = {}
     for key, hash in pairs(Camera.models) do
         -- Format the label nicely
@@ -1061,14 +1061,14 @@ ps.registerCallback(resourceName .. ':server:getCameraModels', function(source)
     -- Sort models alphabetically by label for better UX
     table.sort(models, function(a, b) return a.label < b.label end)
 
-    ps.debug('Providing ' .. #models .. ' camera models to client ' .. source)
+    Bridge.debug('Providing ' .. #models .. ' camera models to client ' .. source)
     return models
 end)
 
 -- Callback to validate camera model
-ps.registerCallback(resourceName .. ':server:validateCameraModel', function(source, modelKey)
+Bridge.registerCallback(resourceName .. ':server:validateCameraModel', function(source, modelKey)
     local isValid = Camera.models[modelKey] ~= nil
-    ps.debug('Validating camera model "' .. tostring(modelKey) .. '" for client ' .. source .. ': ' .. tostring(isValid))
+    Bridge.debug('Validating camera model "' .. tostring(modelKey) .. '" for client ' .. source .. ': ' .. tostring(isValid))
     return isValid
 end)
 
@@ -1083,7 +1083,7 @@ AddEventHandler('onResourceStart', function(startedResource)
         local count = 0
         for _ in pairs(loadedCameras) do count = count + 1 end
 
-        ps.debug('Loaded ' .. count .. ' cameras from database')
+        Bridge.debug('Loaded ' .. count .. ' cameras from database')
     end
 end)
 
@@ -1106,7 +1106,7 @@ AddEventHandler('playerDropped', function(reason)
             camera:deactivate(playerId)
         end
         playerViewingCamera[playerId] = nil
-        ps.debug('Cleaned up camera viewing for disconnected player:', playerId)
+        Bridge.debug('Cleaned up camera viewing for disconnected player:', playerId)
     end
 end)
 

@@ -2,15 +2,15 @@ local resourceName = tostring(GetCurrentResourceName())
 
 RegisterNUICallback('getWeapons', function(data, cb)
     if not MDTOpen then cb({}) return end
-    local weaponList = ps.callback('ps-mdt:server:getWeapons')
-    ps.debug('getWeapons', weaponList)
+    local weaponList = Bridge.callback('ps-mdt:server:getWeapons')
+    Bridge.debug('getWeapons', weaponList)
     cb(weaponList)
 end)
 
 RegisterNUICallback('getWeaponBolos', function(data, cb)
     if not MDTOpen then cb({}) return end
-    local result = ps.callback(resourceName..':server:getBOLO', 'weapon')
-    ps.debug('[getWeaponBolos] Fetched weapon BOLOs:', result)
+    local result = Bridge.callback(resourceName..':server:getBOLO', 'weapon')
+    Bridge.debug('[getWeaponBolos] Fetched weapon BOLOs:', result)
     cb(result)
 end)
 
@@ -21,7 +21,7 @@ RegisterNUICallback('getWeaponOwnershipHistory', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getWeaponOwnershipHistory', data.serial)
+    local result = Bridge.callback(resourceName .. ':server:getWeaponOwnershipHistory', data.serial)
     cb(result or {})
 end)
 
@@ -37,7 +37,7 @@ RegisterNUICallback('saveWeaponInfo', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:saveWeaponInfo', data)
+    local result = Bridge.callback(resourceName .. ':server:saveWeaponInfo', data)
     cb(result or { success = false, message = 'Failed to save weapon info' })
 end)
 
@@ -53,13 +53,13 @@ RegisterNUICallback('deleteWeapon', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:deleteWeapon', data)
+    local result = Bridge.callback(resourceName .. ':server:deleteWeapon', data)
     cb(result or { success = false, message = 'Failed to delete weapon' })
 end)
 
 -- Weapon Self-Register (3rd Eye integration)
 RegisterNetEvent(resourceName .. ':client:selfregister', function()
-    local weaponInfos = ps.callback(resourceName .. ':server:getWeaponInfo')
+    local weaponInfos = Bridge.callback(resourceName .. ':server:getWeaponInfo')
     if weaponInfos and #weaponInfos > 0 then
         for _, weaponInfo in ipairs(weaponInfos) do
             TriggerServerEvent(resourceName .. ':server:selfRegisterWeapon',
@@ -72,6 +72,6 @@ RegisterNetEvent(resourceName .. ':client:selfregister', function()
             )
         end
     else
-        ps.notify('No weapons found to register', 'error')
+        Bridge.notify('No weapons found to register', 'error')
     end
 end)

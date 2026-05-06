@@ -1,7 +1,7 @@
 local resourceName = tostring(GetCurrentResourceName())
 
 -- Get available camera models for camera creation
-ps.registerCallback(resourceName .. ':server:getCameraModels', function(source)
+Bridge.registerCallback(resourceName .. ':server:getCameraModels', function(source)
     -- Import Camera models from main cameras.lua
     local Camera = _G.Camera or {}
     local models = {}
@@ -22,16 +22,16 @@ ps.registerCallback(resourceName .. ':server:getCameraModels', function(source)
     -- Sort models alphabetically by label for better UX
     table.sort(models, function(a, b) return a.label < b.label end)
 
-    ps.debug('Providing ' .. #models .. ' camera models to client ' .. source)
+    Bridge.debug('Providing ' .. #models .. ' camera models to client ' .. source)
     return models
 end)
 
 -- Validate camera model
-ps.registerCallback(resourceName .. ':server:validateCameraModel', function(source, modelKey)
+Bridge.registerCallback(resourceName .. ':server:validateCameraModel', function(source, modelKey)
     -- Import Camera models from main cameras.lua
     local Camera = _G.Camera or {}
     local isValid = (Camera.models or {})[modelKey] ~= nil
 
-    ps.debug('Validating camera model "' .. tostring(modelKey) .. '" for client ' .. source .. ': ' .. tostring(isValid))
+    Bridge.debug('Validating camera model "' .. tostring(modelKey) .. '" for client ' .. source .. ': ' .. tostring(isValid))
     return isValid
 end)

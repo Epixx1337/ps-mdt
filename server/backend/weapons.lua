@@ -109,20 +109,20 @@ end
 
 exports('registerWeapon', registerWeapon)
 
-ps.registerCallback('ps-mdt:server:getWeapons', function(source)
+Bridge.registerCallback('ps-mdt:server:getWeapons', function(source)
     if not CheckAuth(source) then return {} end
     local weapons = MySQL.query.await('SELECT * FROM mdt_weapons')
     local newData = {}
     local weaponBolo = {}
     for k, v in pairs(weapons) do
-        -- Resolve owner name: try mdt_profiles first, then ps_lib lookup
+        -- Resolve owner name: try mdt_profiles first, then framework lookup
         local ownerName = 'Unknown'
         if v.owner and v.owner ~= '' then
             local profile = MySQL.single.await('SELECT fullname FROM mdt_profiles WHERE citizenid = ?', { v.owner })
             if profile and profile.fullname and profile.fullname ~= '' then
                 ownerName = profile.fullname
             else
-                ownerName = ps.getPlayerNameByIdentifier(v.owner) or 'Unknown'
+                ownerName = Bridge.getPlayerNameByIdentifier(v.owner) or 'Unknown'
             end
         end
 
@@ -136,7 +136,7 @@ ps.registerCallback('ps-mdt:server:getWeapons', function(source)
             information = v.information,
             weaponClass = v.weaponClass,
             weaponModel = v.weaponModel,
-            name = (Framework and Framework.GetWeaponByHash(GetHashKey(v.weaponModel)) and Framework.GetWeaponByHash(GetHashKey(v.weaponModel)).label) or v.weaponModel,
+            name = (Bridge and Bridge.GetWeaponByHash(GetHashKey(v.weaponModel)) and Bridge.GetWeaponByHash(GetHashKey(v.weaponModel)).label) or v.weaponModel,
             image = 'https://docs.fivem.net/weapons/' .. v.weaponModel:upper() .. '.png',
             type = class[modelLower] and class[modelLower].type or 'unknown',
         }
@@ -158,7 +158,7 @@ ps.registerCallback('ps-mdt:server:getWeapons', function(source)
     return { weapons = newData, bolos = weaponBolo }
 end)
 
-ps.registerCallback(resourceName .. ':server:getWeaponOwnershipHistory', function(source, serial)
+Bridge.registerCallback(resourceName .. ':server:getWeaponOwnershipHistory', function(source, serial)
     local src = source
     if not CheckAuth(src) then return end
     if not serial or serial == '' then return {} end
@@ -173,7 +173,7 @@ ps.registerCallback(resourceName .. ':server:getWeaponOwnershipHistory', functio
 end)
 
 -- Save/Edit Weapon Info (from NUI)
-ps.registerCallback(resourceName .. ':server:saveWeaponInfo', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:saveWeaponInfo', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -206,11 +206,11 @@ ps.registerCallback(resourceName .. ':server:saveWeaponInfo', function(source, p
         MySQL.insert.await([[
             INSERT INTO mdt_weapon_ownership_history (serial, owner, weapon_model, weapon_class, information, changed_by, reason)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ]], { serial, owner, weapModel, weapClass, notes, ps.getIdentifier(src), 'manual_entry' })
+        ]], { serial, owner, weapModel, weapClass, notes, Bridge.getIdentifier(src), 'manual_entry' })
     end
 
-    if ps.auditLog then
-        ps.auditLog(src, existing and 'weapon_updated' or 'weapon_created', 'weapon', serial, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, existing and 'weapon_updated' or 'weapon_created', 'weapon', serial, {
             owner = owner,
             model = weapModel,
         })
@@ -220,7 +220,7 @@ ps.registerCallback(resourceName .. ':server:saveWeaponInfo', function(source, p
 end)
 
 -- Delete Weapon Record
-ps.registerCallback(resourceName .. ':server:deleteWeapon', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:deleteWeapon', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -241,18 +241,18 @@ ps.registerCallback(resourceName .. ':server:deleteWeapon', function(source, pay
         deleted = MySQL.update.await('DELETE FROM mdt_weapons WHERE serial = ?', { serial })
     end
 
-    if deleted and deleted > 0 and ps.auditLog then
-        ps.auditLog(src, 'weapon_deleted', 'weapon', serial or tostring(id), {})
+    if deleted and deleted > 0 and Bridge.auditLog then
+        Bridge.auditLog(src, 'weapon_deleted', 'weapon', serial or tostring(id), {})
     end
 
     return { success = deleted and deleted > 0, message = deleted > 0 and 'Weapon deleted' or 'Weapon not found' }
 end)
 
 -- Scan player inventory for weapons (for self-register)
-ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
+Bridge.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
     local src = source
-    if not Framework then return {} end
-    local Player = Framework.GetPlayer(src)
+    if not Bridge then return {} end
+    local Player = Bridge.GetPlayer(src)
     if not Player then return {} end
 
     local weaponInfos = {}
@@ -268,7 +268,7 @@ ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
                     weaponInfos[#weaponInfos + 1] = {
                         serialnumber = item.metadata and item.metadata.serial or 'Unknown',
                         owner = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                        weaponmodel = (Framework and Framework.GetSharedItems()[string.lower(item.name)] and Framework.GetSharedItems()[string.lower(item.name)].label) or item.name,
+                        weaponmodel = (Bridge and Bridge.GetSharedItems()[string.lower(item.name)] and Bridge.GetSharedItems()[string.lower(item.name)].label) or item.name,
                         weaponurl = invImage,
                         notes = 'Self Registered',
                         weapClass = 1,
@@ -283,7 +283,7 @@ ps.registerCallback(resourceName .. ':server:getWeaponInfo', function(source)
                     weaponInfos[#weaponInfos + 1] = {
                         serialnumber = item.info and item.info.serie or 'Unknown',
                         owner = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
-                        weaponmodel = (Framework and Framework.GetSharedItems()[item.name] and Framework.GetSharedItems()[item.name].label) or item.name,
+                        weaponmodel = (Bridge and Bridge.GetSharedItems()[item.name] and Bridge.GetSharedItems()[item.name].label) or item.name,
                         weaponurl = item.image or '',
                         notes = 'Self Registered',
                         weapClass = 1,
@@ -306,8 +306,8 @@ CreateThread(function()
     exports.ox_inventory:registerHook('buyItem', function(payload)
         if not payload.itemName or not string.find(payload.itemName, 'WEAPON_') then return true end
         CreateThread(function()
-            if not Framework then return end
-            local Player = Framework.GetPlayer(payload.source)
+            if not Bridge then return end
+            local Player = Bridge.GetPlayer(payload.source)
             if not Player then return end
             local owner = Player.PlayerData.citizenid
             if not owner or not payload.metadata or not payload.metadata.serial then return end
@@ -316,7 +316,7 @@ CreateThread(function()
                 exports[resourceName]:registerWeapon(owner, payload.itemName, payload.metadata.serial, 'Purchased from shop')
             end)
             if not success then
-                ps.warn('Error auto-registering weapon: ' .. tostring(err))
+                Bridge.warn('Error auto-registering weapon: ' .. tostring(err))
             end
         end)
         return true
@@ -328,8 +328,8 @@ CreateThread(function()
         exports.ox_inventory:registerHook('createItem', function(payload)
             if not payload.item or not payload.item.name or not string.find(payload.item.name, 'WEAPON_') then return true end
             CreateThread(function()
-                if not Framework then return end
-                local Player = Framework.GetPlayer(payload.inventoryId)
+                if not Bridge then return end
+                local Player = Bridge.GetPlayer(payload.inventoryId)
                 if not Player then return end
                 local owner = Player.PlayerData.citizenid
                 if not owner or not payload.metadata or not payload.metadata.serial then return end
@@ -338,7 +338,7 @@ CreateThread(function()
                     exports[resourceName]:registerWeapon(owner, payload.item.name, payload.metadata.serial, 'Purchased from shop')
                 end)
                 if not success then
-                    ps.warn('Error auto-registering created weapon: ' .. tostring(err))
+                    Bridge.warn('Error auto-registering created weapon: ' .. tostring(err))
                 end
             end)
             return true
@@ -403,7 +403,7 @@ do
                         exports[resourceName]:registerWeapon(_cid, _model, _serial, 'Purchased from shop')
                     end)
                     if not ok then
-                        ps.warn('Auto-register weapon failed: ' .. tostring(err))
+                        Bridge.warn('Auto-register weapon failed: ' .. tostring(err))
                     end
                 end)
             end
@@ -413,8 +413,8 @@ do
     -- Clean up tracking when player drops
     AddEventHandler('playerDropped', function()
         local src = source
-        if not Framework then return end
-        local Player = Framework.GetPlayer(src)
+        if not Bridge then return end
+        local Player = Bridge.GetPlayer(src)
         if Player and Player.PlayerData and Player.PlayerData.citizenid then
             knownSerials[Player.PlayerData.citizenid] = nil
         end
@@ -428,10 +428,10 @@ AddEventHandler(resourceName .. ':server:selfRegisterWeapon', function(serial, i
     if not serial then return end
 
     local success, err = pcall(function()
-        exports[resourceName]:registerWeapon(owner or ps.getIdentifier(src), weapModel or 'unknown', serial, notes or 'Self Registered')
+        exports[resourceName]:registerWeapon(owner or Bridge.getIdentifier(src), weapModel or 'unknown', serial, notes or 'Self Registered')
     end)
 
     if success then
-        ps.notify(src, 'Weapon registered in police database', 'success')
+        Bridge.notify(src, 'Weapon registered in police database', 'success')
     end
 end)

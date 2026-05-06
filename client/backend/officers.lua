@@ -12,7 +12,7 @@ RegisterNUICallback('setCallsign', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:setCallsign', {
+    local result = Bridge.callback(resourceName .. ':server:setCallsign', {
         citizenid = data.cid or data.citizenid,
         callsign = data.newcallsign or data.callsign,
     })
@@ -31,7 +31,7 @@ RegisterNUICallback('setRadio', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:setRadio', {
+    local result = Bridge.callback(resourceName .. ':server:setRadio', {
         citizenid = data.cid or data.citizenid,
         radio = data.newradio or data.radio,
     })
@@ -46,24 +46,24 @@ RegisterNetEvent(resourceName .. ':client:setRadio', function(radio)
             exports['pma-voice']:setRadioChannel(tonumber(radio))
         end)
         if success then
-            ps.notify('Radio frequency set to ' .. radio, 'success')
+            Bridge.notify('Radio frequency set to ' .. radio, 'success')
         else
-            ps.notify('Failed to set radio - pma-voice not available', 'error')
+            Bridge.notify('Failed to set radio - pma-voice not available', 'error')
         end
     else
-        ps.notify('Invalid radio frequency', 'error')
+        Bridge.notify('Invalid radio frequency', 'error')
     end
 end)
 
 -- Set Waypoint to Unit (GPS to another officer)
 RegisterNUICallback('setWaypointU', function(data, cb)
     if not MDTOpen then cb('ok') return end
-    local coords = ps.callback(resourceName .. ':server:getUnitLocation', data.cid)
+    local coords = Bridge.callback(resourceName .. ':server:getUnitLocation', data.cid)
     if coords then
         SetNewWaypoint(coords.x, coords.y)
-        ps.notify('GPS set to officer location', 'success')
+        Bridge.notify('GPS set to officer location', 'success')
     else
-        ps.notify('Officer not found or offline', 'error')
+        Bridge.notify('Officer not found or offline', 'error')
     end
     cb('ok')
 end)
@@ -78,11 +78,11 @@ RegisterNUICallback('SetHouseLocation', function(data, cb)
         end
         if coords[1] and coords[2] then
             SetNewWaypoint(coords[1], coords[2])
-            ps.notify('GPS set to property location', 'success')
+            Bridge.notify('GPS set to property location', 'success')
         end
     elseif data.x and data.y then
         SetNewWaypoint(data.x, data.y)
-        ps.notify('GPS set to property location', 'success')
+        Bridge.notify('GPS set to property location', 'success')
     end
     cb('ok')
 end)

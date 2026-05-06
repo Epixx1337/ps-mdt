@@ -2,7 +2,7 @@ local resourceName = tostring(GetCurrentResourceName())
 
 -- Civilian self-profile (no MDTOpen check needed, civilians don't use full MDT)
 RegisterNUICallback('getMyProfile', function(data, cb)
-    local result = ps.callback(resourceName .. ':server:getMyProfile')
+    local result = Bridge.callback(resourceName .. ':server:getMyProfile')
     cb(result or { success = false })
 end)
 
@@ -12,13 +12,13 @@ RegisterNUICallback('getCitizens', function(data, cb)
         data = {page = 1}
     end
     local page = data.page or 1 -- Default to page 1 if not provided
-    local ok, result = pcall(ps.callback, resourceName..':server:getCitizens', page)
+    local ok, result = pcall(Bridge.callback, resourceName..':server:getCitizens', page)
     if not ok or type(result) ~= 'table' then
-        ps.warn('[getCitizens] Server callback failed: ' .. tostring(result))
+        Bridge.warn('[getCitizens] Server callback failed: ' .. tostring(result))
         cb({})
         return
     end
-    ps.debug(('[getCitizens] Triggered NUI callback on client for page %d'):format(page), result)
+    Bridge.debug(('[getCitizens] Triggered NUI callback on client for page %d'):format(page), result)
     cb(result)
 end)
 
@@ -33,7 +33,7 @@ RegisterNUICallback('searchCitizens', function(data, cb)
         cb({})
         return
     end
-    local result = ps.callback(resourceName..':server:searchCitizens', query)
+    local result = Bridge.callback(resourceName..':server:searchCitizens', query)
     cb(result)
 end)
 
@@ -52,14 +52,14 @@ RegisterNUICallback('getBolos', function(data, cb)
     if boloType == 'all' then
         boloStatus = boloStatus or 'all'
     end
-    local result = ps.callback(resourceName..':server:getBOLO', boloType, boloStatus)
-    ps.debug('[getBolos] Fetched BOLOs:', result)
+    local result = Bridge.callback(resourceName..':server:getBOLO', boloType, boloStatus)
+    Bridge.debug('[getBolos] Fetched BOLOs:', result)
     cb(result)
 end)
 
 RegisterNUICallback('createBolo', function(data, cb)
     if not MDTOpen then cb({ success = false }) return end
-    local result = ps.callback(resourceName .. ':server:createBolo', data)
+    local result = Bridge.callback(resourceName .. ':server:createBolo', data)
     cb(result or { success = false })
 end)
 
@@ -69,7 +69,7 @@ RegisterNUICallback('deleteBolo', function(data, cb)
         cb({ success = false, message = 'Missing BOLO ID' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:deleteBolo', data)
+    local result = Bridge.callback(resourceName .. ':server:deleteBolo', data)
     cb(result or { success = false })
 end)
 
@@ -79,7 +79,7 @@ RegisterNUICallback('updateBoloStatus', function(data, cb)
         cb({ success = false, message = 'Missing BOLO ID or status' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateBoloStatus', data)
+    local result = Bridge.callback(resourceName .. ':server:updateBoloStatus', data)
     cb(result or { success = false })
 end)
 
@@ -103,7 +103,7 @@ RegisterNUICallback('getCitizen', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getCitizenProfile', data.citizenid)
+    local result = Bridge.callback(resourceName .. ':server:getCitizenProfile', data.citizenid)
     if result then
         cb(result)
     else
@@ -118,7 +118,7 @@ RegisterNUICallback('updateCitizenLicense', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:updateCitizenLicense', data)
+    local result = Bridge.callback(resourceName .. ':server:updateCitizenLicense', data)
     if result then
         cb(result)
     else
@@ -132,7 +132,7 @@ RegisterNUICallback('updateCitizenCustomLicense', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or license id' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateCitizenCustomLicense', data)
+    local result = Bridge.callback(resourceName .. ':server:updateCitizenCustomLicense', data)
     cb(result or { success = false, message = 'Failed to update custom license' })
 end)
 
@@ -142,7 +142,7 @@ RegisterNUICallback('updateCitizen', function(data, cb)
         cb({ success = false, message = 'Missing citizen id' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateCitizen', data)
+    local result = Bridge.callback(resourceName .. ':server:updateCitizen', data)
     cb(result or { success = false, message = 'Failed to update citizen' })
 end)
 
@@ -152,7 +152,7 @@ RegisterNUICallback('addCitizenTag', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or tag' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:addCitizenTag', data)
+    local result = Bridge.callback(resourceName .. ':server:addCitizenTag', data)
     cb(result or { success = false })
 end)
 
@@ -162,7 +162,7 @@ RegisterNUICallback('removeCitizenTag', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or tag' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:removeCitizenTag', data)
+    local result = Bridge.callback(resourceName .. ':server:removeCitizenTag', data)
     cb(result or { success = false })
 end)
 
@@ -172,7 +172,7 @@ RegisterNUICallback('addCitizenGallery', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or image' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:addCitizenGallery', data)
+    local result = Bridge.callback(resourceName .. ':server:addCitizenGallery', data)
     cb(result or { success = false })
 end)
 
@@ -182,7 +182,7 @@ RegisterNUICallback('removeCitizenGallery', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or image' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:removeCitizenGallery', data)
+    local result = Bridge.callback(resourceName .. ':server:removeCitizenGallery', data)
     cb(result or { success = false })
 end)
 
@@ -193,7 +193,7 @@ RegisterNUICallback('updateCitizenFingerprint', function(data, cb)
         cb({ success = false, message = 'Missing citizen id' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateCitizenFingerprint', data.citizenid, data.fingerprint or '')
+    local result = Bridge.callback(resourceName .. ':server:updateCitizenFingerprint', data.citizenid, data.fingerprint or '')
     cb(result or { success = false })
 end)
 
@@ -204,7 +204,7 @@ RegisterNUICallback('updateCitizenDNA', function(data, cb)
         cb({ success = false, message = 'Missing citizen id' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:updateCitizenDNA', data.citizenid, data.dna or '')
+    local result = Bridge.callback(resourceName .. ':server:updateCitizenDNA', data.citizenid, data.dna or '')
     cb(result or { success = false })
 end)
 
@@ -215,7 +215,7 @@ RegisterNUICallback('addSuspectFingerprint', function(data, cb)
         cb({ success = false, message = 'Missing citizen id' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:addSuspectFingerprint', data.citizenid)
+    local result = Bridge.callback(resourceName .. ':server:addSuspectFingerprint', data.citizenid)
     cb(result or { success = false, message = 'Failed to add fingerprint' })
 end)
 
@@ -242,6 +242,6 @@ RegisterNUICallback('uploadSuspectPhoto', function(data, cb)
         cb({ success = false, message = 'Missing citizen id or image data' })
         return
     end
-    local result = ps.callback(resourceName .. ':server:uploadSuspectPhoto', data.citizenid, data.image)
+    local result = Bridge.callback(resourceName .. ':server:uploadSuspectPhoto', data.citizenid, data.image)
     cb(result or { success = false, message = 'Failed to upload photo' })
 end)

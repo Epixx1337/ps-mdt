@@ -11,7 +11,6 @@ version '3.1.0'
 ui_page 'web/dist/index.html'
 
 dependencies {
-  'ps_lib',
   'oxmysql',
   'ox_lib'
 }

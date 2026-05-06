@@ -7,7 +7,7 @@ RegisterNUICallback('viewCamera', function(data, cb)
         return
     end
 
-    ps.debug('viewCamera', data)
+    Bridge.debug('viewCamera', data)
 
     local cameraId = data
     if type(data) == 'table' then
@@ -19,7 +19,7 @@ RegisterNUICallback('viewCamera', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:viewCamera', cameraId)
+    local result = Bridge.callback(resourceName .. ':server:viewCamera', cameraId)
 
     if result and result.success then
         CloseMDT()
@@ -36,7 +36,7 @@ RegisterNUICallback('getCameras', function(_, cb)
         return
     end
 
-    local cameras = ps.callback(resourceName .. ':server:getCameras')
+    local cameras = Bridge.callback(resourceName .. ':server:getCameras')
 
     if cameras then
         cb({ success = true, data = cameras })

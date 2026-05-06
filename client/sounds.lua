@@ -17,15 +17,15 @@ local MDTSounds = {
 -- Play sound based on input
 function PlayMDTSound(soundType)
     if not MDTSounds[soundType] then
-        ps.debug('Unknown MDT sound type:', soundType)
+        Bridge.debug('Unknown MDT sound type:', soundType)
         return
     end
 
     local sound = MDTSounds[soundType]
-    exports.ps_lib:PlaySound({
+    Bridge.playSound({
         audioName = sound.audioName,
         audioRef = sound.audioRef
     })
 
-    ps.debug('Playing MDT sound:', soundType)
+    Bridge.debug('Playing MDT sound:', soundType)
 end

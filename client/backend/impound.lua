@@ -13,7 +13,7 @@ RegisterNUICallback('impoundVehicle', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:impoundVehicle', data)
+    local result = Bridge.callback(resourceName .. ':server:impoundVehicle', data)
     cb(result or { success = false, message = 'Failed to impound vehicle' })
 end)
 
@@ -28,7 +28,7 @@ RegisterNUICallback('releaseImpound', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:releaseImpound', data)
+    local result = Bridge.callback(resourceName .. ':server:releaseImpound', data)
     cb(result or { success = false, message = 'Failed to release vehicle' })
 end)
 
@@ -43,6 +43,6 @@ RegisterNUICallback('getImpoundStatus', function(data, cb)
         return
     end
 
-    local result = ps.callback(resourceName .. ':server:getImpoundStatus', data)
+    local result = Bridge.callback(resourceName .. ':server:getImpoundStatus', data)
     cb(result or { success = false })
 end)

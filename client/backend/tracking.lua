@@ -6,7 +6,7 @@ RegisterNUICallback('getTracking', function(_, cb)
         return
     end
 
-    local tracking = ps.callback(resourceName .. ':server:getTracking')
+    local tracking = Bridge.callback(resourceName .. ':server:getTracking')
     if tracking then
         cb({ success = true, data = tracking })
     else

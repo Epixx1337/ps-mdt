@@ -20,11 +20,11 @@ local function sendPlayerToJail(src, targetSource, citizenId, sentence)
     end
 
     -- Default: qb-prison / standard QBCore jail
-    if not Framework then
+    if not Bridge then
         return false, 'Core framework not available'
     end
 
-    local OtherPlayer = Framework.GetPlayer(targetSource)
+    local OtherPlayer = Bridge.GetPlayer(targetSource)
     if not OtherPlayer then
         return false, 'Could not find target player'
     end
@@ -34,8 +34,8 @@ local function sendPlayerToJail(src, targetSource, citizenId, sentence)
         currentDate.day = 30
     end
 
-    Framework.SetMetaData(targetSource, 'injail', sentence)
-    Framework.SetMetaData(targetSource, 'criminalrecord', {
+    Bridge.SetMetaData(targetSource, 'injail', sentence)
+    Bridge.SetMetaData(targetSource, 'criminalrecord', {
         ['hasRecord'] = true,
         ['date'] = currentDate
     })
@@ -44,7 +44,7 @@ local function sendPlayerToJail(src, targetSource, citizenId, sentence)
 end
 
 -- Send to Jail
-ps.registerCallback(resourceName .. ':server:sendToJail', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:sendToJail', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -56,7 +56,7 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
         return { success = false, message = 'Missing citizen ID or invalid sentence' }
     end
 
-    local targetPlayer = ps.getPlayerByIdentifier(citizenId)
+    local targetPlayer = Bridge.getPlayerByIdentifier(citizenId)
     if not targetPlayer then
         return { success = false, message = 'Player must be online to send to jail' }
     end
@@ -71,10 +71,10 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
         return { success = false, message = err or 'Failed to send to jail' }
     end
 
-    ps.notify(src, 'Sent to jail for ' .. sentence .. ' months', 'success')
+    Bridge.notify(src, 'Sent to jail for ' .. sentence .. ' months', 'success')
 
-    if ps.auditLog then
-        ps.auditLog(src, 'sent_to_jail', 'citizen', citizenId, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'sent_to_jail', 'citizen', citizenId, {
             sentence = sentence,
         })
     end
@@ -82,7 +82,7 @@ ps.registerCallback(resourceName .. ':server:sendToJail', function(source, paylo
     return { success = true, message = 'Sent to jail for ' .. sentence .. ' months' }
 end)
 
-ps.registerCallback(resourceName .. ':server:giveCitation', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:giveCitation', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -98,7 +98,7 @@ ps.registerCallback(resourceName .. ':server:giveCitation', function(source, pay
         return { success = false, message = 'Invalid fine amount' }
     end
 
-    local Player = ps.getPlayerByIdentifier(citizenId)
+    local Player = Bridge.getPlayerByIdentifier(citizenId)
     if not Player then
         return { success = false, message = 'Player must be online to issue a fine' }
     end
@@ -108,17 +108,17 @@ ps.registerCallback(resourceName .. ':server:giveCitation', function(source, pay
         return { success = false, message = 'Could not resolve player source' }
     end
 
-    local removed = ps.removeMoney(playerSrc, 'bank', fine, 'mdt-fine')
+    local removed = Bridge.removeMoney(playerSrc, 'bank', fine, 'mdt-fine')
     if not removed then
         return { success = false, message = 'Could not deduct fine (insufficient funds)' }
     end
 
-    ps.notify(playerSrc, '$' .. fine .. ' fine deducted from your bank account', 'error')
-    ps.notify(src, '$' .. fine .. ' fine issued successfully', 'success')
+    Bridge.notify(playerSrc, '$' .. fine .. ' fine deducted from your bank account', 'error')
+    Bridge.notify(src, '$' .. fine .. ' fine issued successfully', 'success')
 
-    if ps.auditLog then
-        local officerName = ps.getPlayerName(src) or 'Unknown Officer'
-        ps.auditLog(src, 'fine_issued', 'citizen', citizenId, {
+    if Bridge.auditLog then
+        local officerName = Bridge.getPlayerName(src) or 'Unknown Officer'
+        Bridge.auditLog(src, 'fine_issued', 'citizen', citizenId, {
             fine = fine,
             reportId = reportId,
             officerName = officerName,

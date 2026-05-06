@@ -3,7 +3,7 @@
 -- Check if a job is an LEO job (checks against Config.PoliceJobType from the core)
 local function isLEOJob(jobName)
     if not jobName then
-        return ps.getJobType() == Config.PoliceJobType
+        return Bridge.getJobType() == Config.PoliceJobType
     end
     if Config.PoliceJobs then
         for _, job in ipairs(Config.PoliceJobs) do
@@ -33,12 +33,12 @@ end)
 -- Open civilian MDT (profile + legislation view)
 exports('openCivilianMDT', function()
     if MDTOpen then return end
-    if ps.isDead() then
-        ps.notify('You cannot access records right now', 'error')
+    if Bridge.isDead() then
+        Bridge.notify('You cannot access records right now', 'error')
         return
     end
     MDTOpen = true
-    local playerData = ps.getPlayerData()
+    local playerData = Bridge.getPlayerData()
     SendNUI('setVisible', { visible = true, debugMode = Config.Debug })
     SendNUI('updateAuth', {
         authorized = true,
@@ -81,5 +81,5 @@ CreateThread(function()
         })
     end
 
-    ps.debug('Registered ' .. #(cfg.locations or {}) .. ' civilian MDT target(s)')
+    Bridge.debug('Registered ' .. #(cfg.locations or {}) .. ' civilian MDT target(s)')
 end)

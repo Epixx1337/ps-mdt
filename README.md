@@ -1,6 +1,6 @@
 # ps-mdt v3
 
-Police MDT (Mobile Data Terminal) for FiveM. Built with Svelte 5 and Lua. Works on QBCore and QBX through the ps_lib abstraction layer.
+Police MDT (Mobile Data Terminal) for FiveM. Built with Svelte 5 and Lua. Works on QBCore and QBX out of the box — framework detection happens inside the bundled `bridge/` module, so no extra abstraction layer is required.
 
 ## What is this
 
@@ -12,9 +12,8 @@ These need to be running on your server:
 
 | Resource | Why |
 |----------|-----|
-| [ps_lib](https://github.com/Project-Sloth/ps_lib) | Framework abstraction layer |
 | [oxmysql](https://github.com/overextended/oxmysql) | Database |
-| [ox_lib](https://github.com/overextended/ox_lib) | Utility library |
+| [ox_lib](https://github.com/overextended/ox_lib) | Utility library + callbacks + notifications |
 | [screenshot-basic](https://github.com/citizenfx/screenshot-basic) | Mugshot capture |
 
 
@@ -23,7 +22,6 @@ Optional but HIGHLY RECOMMENDED:
 | Resource | Why |
 |----------|-----|
 | [ps-dispatch](https://github.com/Project-Sloth/ps-dispatch) | Dispatch integration |
-| [ps-multijob](https://github.com/Project-Sloth/ps-multijob) | Officers Bodycam |
 
 ## Installation
 No backwards compatibility with ps-mdtv1.
@@ -102,7 +100,6 @@ npm run build
 ### 5. Add to server.cfg
 
 ```
-ensure ps_lib
 ensure oxmysql
 ensure ox_lib
 ensure ps-mdt

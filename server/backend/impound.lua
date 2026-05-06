@@ -1,7 +1,7 @@
 local resourceName = tostring(GetCurrentResourceName())
 
 -- Impound a vehicle by plate
-ps.registerCallback(resourceName .. ':server:impoundVehicle', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:impoundVehicle', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -37,9 +37,9 @@ ps.registerCallback(resourceName .. ':server:impoundVehicle', function(source, p
         })
     end
 
-    if ps.auditLog then
-        local officerName = ps.getPlayerName(src) or 'Unknown'
-        ps.auditLog(src, 'vehicle_impounded', 'vehicle', plate, {
+    if Bridge.auditLog then
+        local officerName = Bridge.getPlayerName(src) or 'Unknown'
+        Bridge.auditLog(src, 'vehicle_impounded', 'vehicle', plate, {
             fee = fee,
             reportId = linkedReport,
             officer = officerName,
@@ -50,7 +50,7 @@ ps.registerCallback(resourceName .. ':server:impoundVehicle', function(source, p
 end)
 
 -- Release a vehicle from impound
-ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:releaseImpound', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
 
@@ -99,9 +99,9 @@ ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, p
         TriggerClientEvent(resourceName .. ':client:TakeOutImpound', src, spawnData)
     end
 
-    if ps.auditLog then
-        local officerName = ps.getPlayerName(src) or 'Unknown'
-        ps.auditLog(src, 'vehicle_released', 'vehicle', plate, {
+    if Bridge.auditLog then
+        local officerName = Bridge.getPlayerName(src) or 'Unknown'
+        Bridge.auditLog(src, 'vehicle_released', 'vehicle', plate, {
             officer = officerName,
         })
     end
@@ -110,7 +110,7 @@ ps.registerCallback(resourceName .. ':server:releaseImpound', function(source, p
 end)
 
 -- Get impound status for a vehicle
-ps.registerCallback(resourceName .. ':server:getImpoundStatus', function(source, payload)
+Bridge.registerCallback(resourceName .. ':server:getImpoundStatus', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false } end
 

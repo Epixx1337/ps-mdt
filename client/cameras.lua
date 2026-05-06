@@ -27,7 +27,7 @@ local cameraModelsCache = nil
 
 -- Stop camera view
 local function stopCameraView(notifyServer)
-    ps.debug('Stopping camera view, notifyServer:', notifyServer)
+    Bridge.debug('Stopping camera view, notifyServer:', notifyServer)
 
     if isViewingCamera and currentCamera then
         DoScreenFadeOut(250)
@@ -42,14 +42,14 @@ local function stopCameraView(notifyServer)
         isViewingCamera = false
 
         if hiddenCameraEntity and DoesEntityExist(hiddenCameraEntity) then
-            ps.debug('Restoring visibility of camera entity:', hiddenCameraEntity)
+            Bridge.debug('Restoring visibility of camera entity:', hiddenCameraEntity)
             SetEntityVisible(hiddenCameraEntity, true, false)
             hiddenCameraEntity = nil
         end
 
         ClearTimecycleModifier()
 
-        ps.debug('Clearing focus area')
+        Bridge.debug('Clearing focus area')
         ClearFocus()
 
         DoScreenFadeIn(250)
@@ -57,44 +57,44 @@ local function stopCameraView(notifyServer)
         if notifyServer then
             if currentCameraData and currentCameraData.isBodycam then
                 local bodycamId = currentCameraData.targetSource and tostring(currentCameraData.targetSource) or 'unknown'
-                ps.debug('Notifying server to deactivate bodycam:', bodycamId)
+                Bridge.debug('Notifying server to deactivate bodycam:', bodycamId)
                 TriggerServerEvent(resourceName .. ':server:deactivateBodycam', bodycamId)
             else
-                ps.debug('Notifying server to deactivate regular camera')
+                Bridge.debug('Notifying server to deactivate regular camera')
                 TriggerServerEvent(resourceName .. ':server:deactivateCamera', 'current')
             end
         end
 
         currentCameraData = nil
 
-        ps.debug('Camera view stopped')
+        Bridge.debug('Camera view stopped')
     else
-        ps.debug('No active camera view to stop')
+        Bridge.debug('No active camera view to stop')
     end
 end
 
 -- Start camera view
 RegisterNetEvent(resourceName..':client:startCameraView', function(cameraData)
-    ps.debug('Starting camera view with data type:', type(cameraData))
-    ps.debug('Starting camera view with data:', json.encode(cameraData or {}))
+    Bridge.debug('Starting camera view with data type:', type(cameraData))
+    Bridge.debug('Starting camera view with data:', json.encode(cameraData or {}))
 
     -- Validate
     if not cameraData or type(cameraData) ~= 'table' then
-        ps.error('Invalid camera data received - type: ' .. type(cameraData))
+        Bridge.error('Invalid camera data received - type: ' .. type(cameraData))
         return
     end
 
     if not cameraData.coords or not cameraData.rotation then
-        ps.error('Camera data missing coords or rotation')
+        Bridge.error('Camera data missing coords or rotation')
         return
     end
 
-    ps.debug('Camera coords:', cameraData.coords)
-    ps.debug('Camera rotation:', cameraData.rotation)
+    Bridge.debug('Camera coords:', cameraData.coords)
+    Bridge.debug('Camera rotation:', cameraData.rotation)
 
     -- Stop any existing camera view first
     if isViewingCamera and currentCamera then
-        ps.debug('Stopping existing camera view first...')
+        Bridge.debug('Stopping existing camera view first...')
         stopCameraView(true)
     end
 
@@ -104,24 +104,24 @@ RegisterNetEvent(resourceName..':client:startCameraView', function(cameraData)
     end
 
     -- Set focus area to the camera coordinates to ensure the area is streamed
-    ps.debug('Setting focus area to camera coordinates:', cameraData.coords.x, cameraData.coords.y, cameraData.coords.z)
+    Bridge.debug('Setting focus area to camera coordinates:', cameraData.coords.x, cameraData.coords.y, cameraData.coords.z)
     SetFocusPosAndVel(cameraData.coords.x, cameraData.coords.y, cameraData.coords.z, 0, 0, 0)
     -- Wait a moment for the focus area to take effect
     Wait(100)
 
     -- Create a camera that views from the entity coords
     local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
-    ps.debug('CreateCam result:', cam, 'type:', type(cam))
+    Bridge.debug('CreateCam result:', cam, 'type:', type(cam))
 
     -- Hide the camera entity if it exists to avoid obscuring the view
     if cameraData.networkId then
         local cameraEntity = NetworkGetEntityFromNetworkId(cameraData.networkId)
         if cameraEntity and DoesEntityExist(cameraEntity) then
-            ps.debug('Hiding camera entity:', cameraEntity, 'with network ID:', cameraData.networkId)
+            Bridge.debug('Hiding camera entity:', cameraEntity, 'with network ID:', cameraData.networkId)
             SetEntityVisible(cameraEntity, false, false)
             hiddenCameraEntity = cameraEntity
         else
-            ps.debug('Camera entity not found or does not exist for network ID:', cameraData.networkId)
+            Bridge.debug('Camera entity not found or does not exist for network ID:', cameraData.networkId)
         end
     end
 
@@ -129,24 +129,24 @@ RegisterNetEvent(resourceName..':client:startCameraView', function(cameraData)
         -- Use the coords and rot from server
         local coords = cameraData.coords
         local rotation = cameraData.rotation
-        ps.debug('Using coords from server data:', tostring(coords))
-        ps.debug('Using rotation from server data:', tostring(rotation))
+        Bridge.debug('Using coords from server data:', tostring(coords))
+        Bridge.debug('Using rotation from server data:', tostring(rotation))
 
         -- Set camera pos and rot
         SetCamCoord(cam, coords.x, coords.y, coords.z)
         SetCamRot(cam, rotation.x, rotation.y, rotation.z, 2)
         SetCamFov(cam, 50.0)
 
-        ps.debug('Camera properties set - Position:', tostring(coords), 'Rotation:', tostring(rotation))
+        Bridge.debug('Camera properties set - Position:', tostring(coords), 'Rotation:', tostring(rotation))
 
         -- debug shit
         -- local camCoords = GetCamCoord(cam)
         -- local camRot = GetCamRot(cam, 2)
-        -- ps.debug('Verified camera coords:', tostring(camCoords))
-        -- ps.debug('Verified camera rotation:', tostring(camRot))
+        -- Bridge.debug('Verified camera coords:', tostring(camCoords))
+        -- Bridge.debug('Verified camera rotation:', tostring(camRot))
 
         SetCamActive(cam, true)
-        ps.debug('Camera activated')
+        Bridge.debug('Camera activated')
         RenderScriptCams(true, false, 0, true, true)
         currentCamera = cam
         isViewingCamera = true
@@ -158,12 +158,12 @@ RegisterNetEvent(resourceName..':client:startCameraView', function(cameraData)
         DoScreenFadeIn(250)
         startCameraControlThread()
 
-        ps.debug('Camera view activated at coordinates:', tostring(coords))
+        Bridge.debug('Camera view activated at coordinates:', tostring(coords))
     else
-        ps.error('Failed to create camera - CreateCam returned:', tostring(cam))
+        Bridge.error('Failed to create camera - CreateCam returned:', tostring(cam))
 
         if hiddenCameraEntity and DoesEntityExist(hiddenCameraEntity) then
-            ps.debug('Restoring visibility of camera entity due to camera creation failure:', hiddenCameraEntity)
+            Bridge.debug('Restoring visibility of camera entity due to camera creation failure:', hiddenCameraEntity)
             SetEntityVisible(hiddenCameraEntity, true, false)
             hiddenCameraEntity = nil
         end
@@ -349,13 +349,13 @@ local function getCameraModels()
     end
 
     -- Fetch models from server
-    local models = ps.callback('ps-mdt:server:getCameraModels')
+    local models = Bridge.callback('ps-mdt:server:getCameraModels')
     if models then
         cameraModelsCache = models -- Cache the result
         return models
     else
         -- Fallback in case callback fails
-        ps.error('Failed to fetch camera models from server')
+        Bridge.error('Failed to fetch camera models from server')
         return {
             { value = 'security_cam_03', label = 'Security Cam 03 (Default)' }
         }
@@ -365,7 +365,7 @@ end
 -- Function to clear camera models cache (useful if models are updated on server)
 local function clearCameraModelsCache()
     cameraModelsCache = nil
-    ps.debug('Camera models cache cleared')
+    Bridge.debug('Camera models cache cleared')
 end
 
 -- Helper func to get the actual model name from the selected key
@@ -377,7 +377,7 @@ local function getModelNameFromKey(selectedKey)
         end
     end
     -- Fallback to a default model if not found
-    ps.warn('Model key not found: ' .. tostring(selectedKey) .. ', using fallback')
+    Bridge.warn('Model key not found: ' .. tostring(selectedKey) .. ', using fallback')
     return 'prop_cctv_cam_06a'
 end
 
@@ -417,15 +417,15 @@ function CameraPlacement.showPlacementMenu()
     })
 
     if not input then
-        ps.info('Camera placement cancelled')
-        ps.notify('Camera placement cancelled', 'info')
+        Bridge.info('Camera placement cancelled')
+        Bridge.notify('Camera placement cancelled', 'info')
         return
     end
 
     -- Validate camera ID format
     if not tostring(input[1]):match("^[a-zA-Z0-9_%-]+$") then
-        ps.warn('Invalid camera ID format', 'error')
-        ps.notify('Camera ID can only contain letters, numbers, underscores, and dashes', 'error')
+        Bridge.warn('Invalid camera ID format', 'error')
+        Bridge.notify('Camera ID can only contain letters, numbers, underscores, and dashes', 'error')
         return
     end
 
@@ -434,15 +434,15 @@ function CameraPlacement.showPlacementMenu()
     local x, y, z, heading = parseVector4(positionStr)
 
     if not x or not y or not z or not heading then
-        ps.warn('Invalid vector4 format', 'error')
-        ps.notify('Invalid vector4 format. Use: vector4(x, y, z, heading)', 'error')
+        Bridge.warn('Invalid vector4 format', 'error')
+        Bridge.notify('Invalid vector4 format. Use: vector4(x, y, z, heading)', 'error')
         return
     end
 
     -- Validate coordinate ranges
     if x < -4000 or x > 4000 or y < -4000 or y > 4000 or z < -100 or z > 1000 then
-        ps.warn('Coordinates out of range', 'error')
-        ps.notify('Coordinates out of range. X,Y: -4000 to 4000, Z: -100 to 1000', 'error')
+        Bridge.warn('Coordinates out of range', 'error')
+        Bridge.notify('Coordinates out of range. X,Y: -4000 to 4000, Z: -100 to 1000', 'error')
         return
     end
 
@@ -451,10 +451,10 @@ function CameraPlacement.showPlacementMenu()
     if heading < 0 then heading = heading + 360 end
 
     -- Validate camera model with server
-    local modelValid = ps.callback('ps-mdt:server:validateCameraModel', tostring(input[3]))
+    local modelValid = Bridge.callback('ps-mdt:server:validateCameraModel', tostring(input[3]))
     if not modelValid then
-        ps.warn('Invalid camera model selected: ' .. tostring(input[3]))
-        ps.notify('Invalid camera model selected', 'error')
+        Bridge.warn('Invalid camera model selected: ' .. tostring(input[3]))
+        Bridge.notify('Invalid camera model selected', 'error')
         return
     end
 
@@ -469,7 +469,7 @@ function CameraPlacement.showPlacementMenu()
 
     -- Send to server for creation
     TriggerServerEvent(resourceName .. ':server:createStaticCamera', cameraData)
-    ps.info('Camera placement request sent to server for:' .. cameraData.camId)
+    Bridge.info('Camera placement request sent to server for:' .. cameraData.camId)
 end
 
 -- Get existing cams
@@ -480,8 +480,8 @@ end
 -- Handle camera list response from server
 RegisterNetEvent(resourceName .. ':client:receiveCameraList', function(cameras)
     if not cameras or #cameras == 0 then
-        ps.info('No cameras found')
-        ps.notify('No cameras found', 'info')
+        Bridge.info('No cameras found')
+        Bridge.notify('No cameras found', 'info')
         return
     end
 
@@ -621,8 +621,8 @@ function CameraPlacement.showEditMenu(camera)
     })
 
     if not input then
-        ps.info('Camera edit cancelled')
-        ps.notify('Camera edit cancelled', 'info')
+        Bridge.info('Camera edit cancelled')
+        Bridge.notify('Camera edit cancelled', 'info')
         return
     end
 
@@ -631,15 +631,15 @@ function CameraPlacement.showEditMenu(camera)
     local x, y, z, heading = parseVector4(positionStr)
 
     if not x or not y or not z or not heading then
-        ps.warn('Invalid vector4 format', 'error')
-        ps.notify('Invalid vector4 format. Use: vector4(x, y, z, heading)', 'error')
+        Bridge.warn('Invalid vector4 format', 'error')
+        Bridge.notify('Invalid vector4 format. Use: vector4(x, y, z, heading)', 'error')
         return
     end
 
     -- Validate coordinate ranges
     if x < -4000 or x > 4000 or y < -4000 or y > 4000 or z < -100 or z > 1000 then
-        ps.warn('Coordinates out of range', 'error')
-        ps.notify('Coordinates out of range. X,Y: -4000 to 4000, Z: -100 to 1000', 'error')
+        Bridge.warn('Coordinates out of range', 'error')
+        Bridge.notify('Coordinates out of range. X,Y: -4000 to 4000, Z: -100 to 1000', 'error')
         return
     end
 
@@ -648,10 +648,10 @@ function CameraPlacement.showEditMenu(camera)
     if heading < 0 then heading = heading + 360 end
 
     -- Validate camera model with server
-    local modelValid = ps.callback('ps-mdt:server:validateCameraModel', tostring(input[2]))
+    local modelValid = Bridge.callback('ps-mdt:server:validateCameraModel', tostring(input[2]))
     if not modelValid then
-        ps.warn('Invalid camera model selected: ' .. tostring(input[2]))
-        ps.notify('Invalid camera model selected', 'error')
+        Bridge.warn('Invalid camera model selected: ' .. tostring(input[2]))
+        Bridge.notify('Invalid camera model selected', 'error')
         return
     end
 
@@ -665,12 +665,12 @@ function CameraPlacement.showEditMenu(camera)
     }
 
     -- Send to server for update
-    local result = ps.callback(resourceName .. ':server:updateCamera', updateData)
+    local result = Bridge.callback(resourceName .. ':server:updateCamera', updateData)
     if result and result.success then
-        ps.info('Camera update request sent to server for: ' .. camera.camId)
+        Bridge.info('Camera update request sent to server for: ' .. camera.camId)
     else
-        ps.warn('Camera update failed for: ' .. camera.camId)
-        ps.notify('Camera update failed', 'error')
+        Bridge.warn('Camera update failed for: ' .. camera.camId)
+        Bridge.notify('Camera update failed', 'error')
     end
 end
 
@@ -702,23 +702,23 @@ function CameraPlacement.createWithGizmo()
     })
 
     if not input then
-        ps.info('Camera creation cancelled')
-        ps.notify('Camera creation cancelled', 'info')
+        Bridge.info('Camera creation cancelled')
+        Bridge.notify('Camera creation cancelled', 'info')
         return
     end
 
     -- Validate camera ID format
     if not tostring(input[1]):match("^[a-zA-Z0-9_%-]+$") then
-        ps.warn('Invalid camera ID format', 'error')
-        ps.notify('Camera ID can only contain letters, numbers, underscores, and dashes', 'error')
+        Bridge.warn('Invalid camera ID format', 'error')
+        Bridge.notify('Camera ID can only contain letters, numbers, underscores, and dashes', 'error')
         return
     end
 
     -- Validate camera model with server
-    local modelValid = ps.callback('ps-mdt:server:validateCameraModel', tostring(input[3]))
+    local modelValid = Bridge.callback('ps-mdt:server:validateCameraModel', tostring(input[3]))
     if not modelValid then
-        ps.warn('Invalid camera model selected: ' .. tostring(input[3]))
-        ps.notify('Invalid camera model selected', 'error')
+        Bridge.warn('Invalid camera model selected: ' .. tostring(input[3]))
+        Bridge.notify('Invalid camera model selected', 'error')
         return
     end
 
@@ -733,26 +733,26 @@ function CameraPlacement.createWithGizmo()
     local actualModelName = getModelNameFromKey(selectedKey)
     local modelHash = GetHashKey(actualModelName)
 
-    ps.debug('Selected key: ' .. selectedKey .. ', Model name: ' .. actualModelName .. ', Hash: ' .. tostring(modelHash))
+    Bridge.debug('Selected key: ' .. selectedKey .. ', Model name: ' .. actualModelName .. ', Hash: ' .. tostring(modelHash))
     lib.requestModel(modelHash)
 
     -- Create temporary object
     local tempObj = CreateObject(modelHash, spawnCoords.x, spawnCoords.y, spawnCoords.z + 1.0, false, false, false)
 
     if not tempObj or tempObj == 0 then
-        ps.error('Failed to create temporary camera object for placement')
-        ps.notify('Failed to create placement object', 'error')
+        Bridge.error('Failed to create temporary camera object for placement')
+        Bridge.notify('Failed to create placement object', 'error')
         return
     end
-    ps.debug('Created temporary object for gizmo placement')
+    Bridge.debug('Created temporary object for gizmo placement')
 
     -- Use gizmo for placement
-    ps.notify('Use the gizmo to position the camera, then press ENTER when done', 'info')
+    Bridge.notify('Use the gizmo to position the camera, then press ENTER when done', 'info')
     local gizmoResult = exports[GetCurrentResourceName()]:useGizmo(tempObj)
 
     if not gizmoResult then
-        ps.warn('Gizmo placement cancelled')
-        ps.notify('Camera placement cancelled', 'info')
+        Bridge.warn('Gizmo placement cancelled')
+        Bridge.notify('Camera placement cancelled', 'info')
         DeleteObject(tempObj)
         return
     end
@@ -761,8 +761,8 @@ function CameraPlacement.createWithGizmo()
     local finalCoords = gizmoResult.position
     local finalRotation = gizmoResult.rotation
 
-    ps.debug('Gizmo final position: ' .. tostring(finalCoords))
-    ps.debug('Final rotation: ' .. tostring(finalRotation))
+    Bridge.debug('Gizmo final position: ' .. tostring(finalCoords))
+    Bridge.debug('Final rotation: ' .. tostring(finalRotation))
 
     -- Clean up temporary object
     DeleteObject(tempObj)
@@ -776,16 +776,16 @@ function CameraPlacement.createWithGizmo()
         rotation = vector3(finalRotation.x, finalRotation.y, finalRotation.z),
     }
 
-    ps.debug('Camera data being sent to server:')
-    ps.debug('  coords: ' .. tostring(cameraData.coords))
-    ps.debug('  rotation: ' .. tostring(cameraData.rotation))
+    Bridge.debug('Camera data being sent to server:')
+    Bridge.debug('  coords: ' .. tostring(cameraData.coords))
+    Bridge.debug('  rotation: ' .. tostring(cameraData.rotation))
 
     SetModelAsNoLongerNeeded(modelHash)
 
     -- Send to server for creation
     TriggerServerEvent(resourceName .. ':server:createStaticCamera', cameraData)
-    ps.info('Camera placement request sent to server for: ' .. cameraData.camId)
-    ps.notify('Camera created at position: ' .. string.format('%.2f, %.2f, %.2f', finalCoords.x, finalCoords.y, finalCoords.z), 'success')
+    Bridge.info('Camera placement request sent to server for: ' .. cameraData.camId)
+    Bridge.notify('Camera created at position: ' .. string.format('%.2f, %.2f, %.2f', finalCoords.x, finalCoords.y, finalCoords.z), 'success')
 end
 
 -- Position existing camera with gizmo
@@ -794,29 +794,29 @@ function CameraPlacement.placeWithGizmo(camera)
     local actualModelName = getModelNameFromKey(camera.model)
     local modelHash = GetHashKey(actualModelName)
 
-    ps.debug('Repositioning camera with key: ' .. camera.model .. ', Model name: ' .. actualModelName .. ', Hash: ' .. tostring(modelHash))
+    Bridge.debug('Repositioning camera with key: ' .. camera.model .. ', Model name: ' .. actualModelName .. ', Hash: ' .. tostring(modelHash))
     lib.requestModel(modelHash)
 
     -- Create temporary object at current camera position
     local tempObj = CreateObject(modelHash, camera.coords.x, camera.coords.y, camera.coords.z, false, false, false)
 
     if not tempObj or tempObj == 0 then
-        ps.error('Failed to create temporary camera object for placement')
-        ps.notify('Failed to create placement object', 'error')
+        Bridge.error('Failed to create temporary camera object for placement')
+        Bridge.notify('Failed to create placement object', 'error')
         return
     end
 
     SetEntityRotation(tempObj, camera.rotation.x, camera.rotation.y, camera.rotation.z, 2, false)
 
-    ps.debug('Created temporary object for gizmo repositioning')
+    Bridge.debug('Created temporary object for gizmo repositioning')
 
-    ps.notify('Use the gizmo to reposition camera "' .. camera.camLabel .. '", then press ENTER when done', 'info')
+    Bridge.notify('Use the gizmo to reposition camera "' .. camera.camLabel .. '", then press ENTER when done', 'info')
 
     local gizmoResult = exports[GetCurrentResourceName()]:useGizmo(tempObj)
 
     if not gizmoResult then
-        ps.warn('Gizmo placement cancelled')
-        ps.notify('Camera repositioning cancelled', 'info')
+        Bridge.warn('Gizmo placement cancelled')
+        Bridge.notify('Camera repositioning cancelled', 'info')
         DeleteObject(tempObj)
         return
     end
@@ -826,8 +826,8 @@ function CameraPlacement.placeWithGizmo(camera)
     local finalCoords = gizmoResult.position
     local finalRotation = gizmoResult.rotation
 
-    ps.debug('Gizmo final position: ' .. tostring(finalCoords))
-    ps.debug('Final rotation: ' .. tostring(finalRotation))
+    Bridge.debug('Gizmo final position: ' .. tostring(finalCoords))
+    Bridge.debug('Final rotation: ' .. tostring(finalRotation))
 
     -- Clean up temporary object
     DeleteObject(tempObj)
@@ -841,13 +841,13 @@ function CameraPlacement.placeWithGizmo(camera)
     }
 
     -- Send to server for update
-    local result = ps.callback(resourceName .. ':server:updateCamera', updateData)
+    local result = Bridge.callback(resourceName .. ':server:updateCamera', updateData)
     if not result or not result.success then
-        ps.warn('Camera update failed for: ' .. camera.camId)
-        ps.notify('Camera update failed', 'error')
+        Bridge.warn('Camera update failed for: ' .. camera.camId)
+        Bridge.notify('Camera update failed', 'error')
     end
-    ps.info('Camera repositioning request sent to server for: ' .. camera.camId)
-    ps.notify('Camera repositioned at: ' .. string.format('%.2f, %.2f, %.2f', finalCoords.x, finalCoords.y, finalCoords.z), 'success')
+    Bridge.info('Camera repositioning request sent to server for: ' .. camera.camId)
+    Bridge.notify('Camera repositioned at: ' .. string.format('%.2f, %.2f, %.2f', finalCoords.x, finalCoords.y, finalCoords.z), 'success')
 end
 
 -- Main camera menu

@@ -1,7 +1,7 @@
 --- Resolve which job list and job type to use for the roster based on the requesting player's department.
 local function resolveRosterJobs(source)
-    local playerJobType = ps.getJobType(source)
-    local playerJobName = ps.getJobName(source)
+    local playerJobType = Bridge.getJobType(source)
+    local playerJobName = Bridge.getJobName(source)
 
     if playerJobType == Config.MedicalJobType then
         return (Config.MedicalJobs or { 'ambulance' }), Config.MedicalJobType
@@ -86,7 +86,7 @@ local function buildRosterFromFramework(jobList, targetJobType)
 
     -- Use GetGroupMembers if available (QBox)
     for _, jobName in ipairs(jobList) do
-        local groupMembers = Framework.GetGroupMembers(jobName, 'job') or {}
+        local groupMembers = Bridge.GetGroupMembers(jobName, 'job') or {}
         for _, member in ipairs(groupMembers) do
             if member.citizenid then
                 members[member.citizenid] = true
@@ -94,7 +94,7 @@ local function buildRosterFromFramework(jobList, targetJobType)
         end
     end
 
-    for _, player in ipairs(Framework.GetAllPlayers()) do
+    for _, player in pairs(Bridge.GetAllPlayers()) do
         local data = player.PlayerData or nil
         if data and data.job then
             if isMatchingJob(data.job.name, data.job.type, jobList, targetJobType) then
@@ -111,8 +111,8 @@ local function buildRosterFromFramework(jobList, targetJobType)
     end
 
     for citizenid, _ in pairs(members) do
-        local onlinePlayer = Framework.GetPlayerByCitizenId(citizenid)
-        local player = onlinePlayer or Framework.GetOfflinePlayer(citizenid)
+        local onlinePlayer = Bridge.GetPlayerByCitizenId(citizenid)
+        local player = onlinePlayer or Bridge.GetOfflinePlayer(citizenid)
         if player and player.PlayerData then
             local data = player.PlayerData
             local job = data.job or {}
@@ -157,22 +157,22 @@ local function buildRosterFromFramework(jobList, targetJobType)
 end
 
 local function checkDuty(citizenid, jobList, targetJobType)
-    local player = ps.getPlayerByIdentifier(citizenid)
+    local player = Bridge.getPlayerByIdentifier(citizenid)
     if not player then return 'Off Duty' end
 
     local src = player.source or (player.PlayerData and player.PlayerData.source)
     if not src then return 'Off Duty' end
 
-    if isMatchingJob(ps.getJobName(src), ps.getJobType(src), jobList, targetJobType) and ps.getJobDuty(src) then
+    if isMatchingJob(Bridge.getJobName(src), Bridge.getJobType(src), jobList, targetJobType) and Bridge.getJobDuty(src) then
         return 'On Duty'
     end
     return 'Off Duty'
 end
 
-ps.registerCallback('ps-mdt:server:getRosterList', function(source)
+Bridge.registerCallback('ps-mdt:server:getRosterList', function(source)
     local jobList, targetJobType = resolveRosterJobs(source)
 
-    if Framework and Framework.isQBX then
+    if Bridge and Bridge.isQBX then
         return buildRosterFromFramework(jobList, targetJobType)
     end
 
@@ -184,16 +184,6 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
     end
 
     local employees = {}
-    if GetResourceState('ps-multijob') == 'started' and exports['ps-multijob'] then
-        for _, jobName in ipairs(jobList) do
-            local list = exports['ps-multijob']:getEmployees(jobName) or {}
-            for _, employee in pairs(list) do
-                if employee and employee.citizenid then
-                    employees[employee.citizenid] = employee
-                end
-            end
-        end
-    end
 
     for _, citizen in pairs(MySQL.query.await('SELECT citizenid, charinfo, job, metadata FROM players', {}) or {}) do
         local citizenid = citizen.citizenid
@@ -208,9 +198,9 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
             local firstName = charinfo.firstname or 'N/A'
             local lastName = charinfo.lastname or 'N/A'
             local deptDefaultRank = Config.DepartmentLabels and Config.DepartmentLabels[targetJobType] and Config.DepartmentLabels[targetJobType].singular or 'Officer'
-            local rank = job.grade and job.grade.name or employee.grade and ps.getSharedJobGradeData(jobName or 'unknown', employee.grade, 'name') or deptDefaultRank
+            local rank = job.grade and job.grade.name or employee.grade and Bridge.getSharedJobGradeData(jobName or 'unknown', employee.grade, 'name') or deptDefaultRank
             local status = checkDuty(citizenid, jobList, targetJobType)
-            local onlinePlayer = ps.getPlayerByIdentifier(citizenid)
+            local onlinePlayer = Bridge.getPlayerByIdentifier(citizenid)
             local onlineSrc = onlinePlayer and (onlinePlayer.source or (onlinePlayer.PlayerData and onlinePlayer.PlayerData.source)) or nil
             rosterList[#rosterList + 1] = {
                 id = #rosterList + 1,
@@ -243,11 +233,11 @@ ps.registerCallback('ps-mdt:server:getRosterList', function(source)
 end)
 
 -- Get available officer tags/certifications (filtered by job type)
-ps.registerCallback('ps-mdt:server:getOfficerTags', function(source)
+Bridge.registerCallback('ps-mdt:server:getOfficerTags', function(source)
     local src = source
     if not CheckAuth(src) then return {} end
 
-    local jobType = ps.getJobType(src)
+    local jobType = Bridge.getJobType(src)
     local rows
     if jobType and (jobType == 'leo' or jobType == 'ems' or jobType == 'doj') then
         rows = MySQL.query.await([[
@@ -267,7 +257,7 @@ ps.registerCallback('ps-mdt:server:getOfficerTags', function(source)
 end)
 
 -- Update officer certifications
-ps.registerCallback('ps-mdt:server:updateOfficerCertifications', function(source, payload)
+Bridge.registerCallback('ps-mdt:server:updateOfficerCertifications', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
     if not CheckPermission(src, 'roster_manage_certifications') then
@@ -291,7 +281,7 @@ ps.registerCallback('ps-mdt:server:updateOfficerCertifications', function(source
 end)
 
 -- Get job grades for a specific department
-ps.registerCallback('ps-mdt:server:getJobGrades', function(source, payload)
+Bridge.registerCallback('ps-mdt:server:getJobGrades', function(source, payload)
     local src = source
     if not CheckAuth(src) then return {} end
     if not CheckPermission(src, 'roster_manage_officers') then return {} end
@@ -299,7 +289,7 @@ ps.registerCallback('ps-mdt:server:getJobGrades', function(source, payload)
     payload = payload or {}
     local jobName = payload.job or 'police'
 
-    local jobData = ps.getSharedJob(jobName)
+    local jobData = Bridge.getSharedJob(jobName)
     if not jobData or not jobData.grades then return {} end
 
     local grades = {}
@@ -316,7 +306,7 @@ ps.registerCallback('ps-mdt:server:getJobGrades', function(source, payload)
 end)
 
 -- Promote/demote an officer (change their job grade)
-ps.registerCallback('ps-mdt:server:promoteOfficer', function(source, payload)
+Bridge.registerCallback('ps-mdt:server:promoteOfficer', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
     if not CheckPermission(src, 'roster_manage_officers') then
@@ -333,13 +323,13 @@ ps.registerCallback('ps-mdt:server:promoteOfficer', function(source, payload)
     end
 
     -- Validate the grade exists
-    local gradeData = ps.getSharedJobGrade(jobName, newGrade)
+    local gradeData = Bridge.getSharedJobGrade(jobName, newGrade)
     if not gradeData then
         return { success = false, message = 'Invalid grade for this job' }
     end
 
     -- Find the target player (must be online for QBCore SetJob)
-    local targetPlayer = ps.getPlayerByIdentifier(citizenid)
+    local targetPlayer = Bridge.getPlayerByIdentifier(citizenid)
     if not targetPlayer then
         return { success = false, message = 'Officer must be online to change rank' }
     end
@@ -354,12 +344,12 @@ ps.registerCallback('ps-mdt:server:promoteOfficer', function(source, payload)
         return { success = false, message = 'You cannot change your own rank' }
     end
 
-    ps.setJob(targetSrc, jobName, newGrade)
+    Bridge.setJob(targetSrc, jobName, newGrade)
 
     local gradeName = gradeData.name or ('Grade ' .. newGrade)
 
-    if ps.auditLog then
-        ps.auditLog(src, 'officer_promoted', 'officers', citizenid, {
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'officer_promoted', 'officers', citizenid, {
             job = jobName,
             grade = newGrade,
             gradeName = gradeName,
@@ -370,7 +360,7 @@ ps.registerCallback('ps-mdt:server:promoteOfficer', function(source, payload)
 end)
 
 -- Fire an officer (set their job to unemployed)
-ps.registerCallback('ps-mdt:server:fireOfficer', function(source, payload)
+Bridge.registerCallback('ps-mdt:server:fireOfficer', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
     if not CheckPermission(src, 'roster_manage_officers') then
@@ -384,7 +374,7 @@ ps.registerCallback('ps-mdt:server:fireOfficer', function(source, payload)
         return { success = false, message = 'Missing citizen ID' }
     end
 
-    local targetPlayer = ps.getPlayerByIdentifier(citizenid)
+    local targetPlayer = Bridge.getPlayerByIdentifier(citizenid)
     if not targetPlayer then
         return { success = false, message = 'Officer must be online to be terminated' }
     end
@@ -399,17 +389,17 @@ ps.registerCallback('ps-mdt:server:fireOfficer', function(source, payload)
         return { success = false, message = 'You cannot fire yourself' }
     end
 
-    ps.setJob(targetSrc, 'unemployed', 0)
+    Bridge.setJob(targetSrc, 'unemployed', 0)
 
-    if ps.auditLog then
-        ps.auditLog(src, 'officer_fired', 'officers', citizenid, {})
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'officer_fired', 'officers', citizenid, {})
     end
 
     return { success = true, message = 'Officer has been terminated' }
 end)
 
 -- Update officer callsign (wrapper around existing setCallsign for NUI)
-ps.registerCallback('ps-mdt:server:updateOfficerCallsign', function(source, payload)
+Bridge.registerCallback('ps-mdt:server:updateOfficerCallsign', function(source, payload)
     local src = source
     if not CheckAuth(src) then return { success = false, message = 'Unauthorized' } end
     if not CheckPermission(src, 'roster_manage_officers') then
@@ -425,24 +415,24 @@ ps.registerCallback('ps-mdt:server:updateOfficerCallsign', function(source, payl
     end
 
     -- Use the existing setCallsign callback logic
-    if not Framework then
+    if not Bridge then
         return { success = false, message = 'Core framework not available' }
     end
 
-    local Player = Framework.GetPlayerByCitizenId(citizenid)
+    local Player = Bridge.GetPlayerByCitizenId(citizenid)
     if not Player then
         return { success = false, message = 'Officer must be online to update callsign' }
     end
 
-    Framework.SetMetaData(Player.PlayerData.source, 'callsign', newCallsign)
+    Bridge.SetMetaData(Player.PlayerData.source, 'callsign', newCallsign)
 
     local resourceName = GetCurrentResourceName()
     TriggerClientEvent(resourceName .. ':client:updateCallsign', Player.PlayerData.source, newCallsign)
 
     MySQL.update.await('UPDATE mdt_profiles SET callsign = ? WHERE citizenid = ?', { newCallsign, citizenid })
 
-    if ps.auditLog then
-        ps.auditLog(src, 'callsign_changed', 'officers', citizenid, { callsign = newCallsign })
+    if Bridge.auditLog then
+        Bridge.auditLog(src, 'callsign_changed', 'officers', citizenid, { callsign = newCallsign })
     end
 
     return { success = true, message = 'Callsign updated to ' .. newCallsign }
